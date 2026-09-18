@@ -23,12 +23,15 @@ import {
   createSpeechRecognizer,
   isSpeechRecognitionSupported
 } from '../utils/speechUtils';
+import { formatAnswerValue } from '../utils/answerFormatter';
 
 export default function ChatInterface({
   lang,
   currentQuestion,
   answers,
   history,
+  sectionNotes = {},
+  onSectionNoteChange,
   onAnswer,
   onBack,
   onSkip,
@@ -155,6 +158,10 @@ export default function ChatInterface({
     }
   };
 
+  const handleAnswerSelection = (val, displayLabel = null) => {
+    onAnswer(val, displayLabel);
+  };
+
   const handleTextSubmit = (e) => {
     e?.preventDefault();
     if (!textInput.trim()) return;
@@ -174,6 +181,7 @@ export default function ChatInterface({
   const handleMultiSelectSubmit = () => {
     if (selectedOptions.length === 0) return;
     onAnswer(selectedOptions, selectedOptions.join(', '));
+    setSelectedOptions([]);
   };
 
   if (!currentQuestion) return null;
@@ -209,7 +217,7 @@ export default function ChatInterface({
       <div className="messages-history">
         {history.map((item, idx) => (
           <React.Fragment key={idx}>
-            {/* Assistant Bubble */}
+            {/* Assistant Question Bubble */}
             <div className="chat-bubble-row assistant">
               <div className="avatar-icon assistant">
                 <Heart size={20} fill="#e11d48" color="#e11d48" />
@@ -229,10 +237,10 @@ export default function ChatInterface({
             <div className="chat-bubble-row user">
               <div className="bubble-content">
                 <div className="bubble-user-answer">
-                  {item.answerDisplay}
+                  {formatAnswerValue(item.answerValue || item.answerDisplay)}
                 </div>
               </div>
-              <div className="avatar-icon user">
+              <div className="avatar-icon user" title="Doctor recorded answer">
                 <User size={20} />
               </div>
             </div>
@@ -313,7 +321,7 @@ export default function ChatInterface({
           <div className="yes-no-action-grid">
             <button
               className="btn-yes-huge"
-              onClick={() => onAnswer('yes', t.yes)}
+              onClick={() => handleAnswerSelection('yes', t.yes)}
               type="button"
             >
               <Check size={22} strokeWidth={3} />
@@ -322,7 +330,7 @@ export default function ChatInterface({
 
             <button
               className="btn-no-huge"
-              onClick={() => onAnswer('no', t.no)}
+              onClick={() => handleAnswerSelection('no', t.no)}
               type="button"
             >
               <X size={22} strokeWidth={3} />
@@ -331,7 +339,7 @@ export default function ChatInterface({
 
             <button
               className="btn-not-sure-huge btn-not-sure-full"
-              onClick={() => onAnswer('not_sure', t.notSure)}
+              onClick={() => handleAnswerSelection('not_sure', t.notSure)}
               type="button"
             >
               <HelpCircle size={18} />
@@ -345,7 +353,7 @@ export default function ChatInterface({
           <div className="yes-no-action-grid" style={{ gridTemplateColumns: '1fr 1fr' }}>
             <button
               className="btn-yes-huge"
-              onClick={() => onAnswer('yes', t.yes)}
+              onClick={() => handleAnswerSelection('yes', t.yes)}
               type="button"
             >
               <Check size={22} strokeWidth={3} />
@@ -354,7 +362,7 @@ export default function ChatInterface({
 
             <button
               className="btn-no-huge"
-              onClick={() => onAnswer('no', t.no)}
+              onClick={() => handleAnswerSelection('no', t.no)}
               type="button"
             >
               <X size={22} strokeWidth={3} />
@@ -372,7 +380,7 @@ export default function ChatInterface({
                 <button
                   key={opt.value}
                   className="option-select-card"
-                  onClick={() => onAnswer(opt.value, label)}
+                  onClick={() => handleAnswerSelection(opt.value, label)}
                   type="button"
                 >
                   <span>{label}</span>
@@ -459,6 +467,25 @@ export default function ChatInterface({
             </div>
           </form>
         )}
+
+        {/* ONE optional Notes field for this assessment page/section */}
+        <div className="section-page-note-container">
+          <div className="section-note-label-row">
+            <span className="section-note-label">Notes:</span>
+            <span className="section-note-section-name">[{currentSectionTitle}]</span>
+            {sectionNotes[currentQuestion.section] && (
+              <span className="section-note-saved-badge">✓ Note recorded for this section</span>
+            )}
+          </div>
+          <input
+            id="input-section-note"
+            type="text"
+            className="section-page-note-input"
+            placeholder="Enter notes for this assessment section (optional)..."
+            value={sectionNotes[currentQuestion.section] || ''}
+            onChange={(e) => onSectionNoteChange && onSectionNoteChange(currentQuestion.section, e.target.value)}
+          />
+        </div>
 
         {/* Bottom bar with Back / Skip controls */}
         <div style={{

@@ -1,25 +1,38 @@
 // Demo patients for simulated evaluator testing and clinician dashboard showcase
+// Explicitly tagged: "DEMO DATA — NOT A REAL PATIENT"
 
 export const DEMO_PATIENTS = [
   {
     id: "PT-1042",
     name: "Ananya Sharma",
     age: 28,
-    language: "en",
-    completedAt: "Today, 09:45 AM",
-    status: "Completed",
+    dob: "1998-04-12",
+    phone: "+91 98450 12345",
+    address: "B-402, Green Glen Layout, Bellandur",
+    city: "Bengaluru",
+    marriageDate: "2024-02-14",
+    yearsMarried: 2,
+    previousMarriage: "no",
+    partnerName: "Vikram Sharma",
+    doctorDescription: "Patient presenting for routine pre-pregnancy counselling. Planning conception in 3–6 months. Well-managed hypothyroidism on daily thyroxine. Denies prior pregnancies. Inquiring about preconception vitamins and dental care.",
+    language: "English",
+    completedAt: "15 Sep 2026, 09:45 AM",
+    status: "Reviewed",
     isDemo: true,
     answers: {
       planning_pregnancy: "yes",
       pregnancy_timeframe: "3_to_6m",
-      prior_deliveries: "no",
-      bariatric_surgery: "no",
       menstrual_regularity: "yes",
       cervical_screening: "yes",
+      marital_previous_marriage: "no",
+      consanguineous_marriage: "no",
+      previous_pregnancy: "no",
       medical_diabetes: "no",
       medical_hypertension: "no",
       medical_thyroid: "yes",
+      thyroid_type: "hypothyroid",
       thyroid_medication: "yes",
+      thyroid_latest_tsh: "thyroid_euthyroid",
       medical_epilepsy: "no",
       medical_cardiac: "no",
       medical_renal: "no",
@@ -27,6 +40,7 @@ export const DEMO_PATIENTS = [
       medical_thrombophilia: "no",
       medical_periodontal: "yes",
       medical_weight: "no",
+      bariatric_surgery: "no",
       prior_surgeries: "no",
       taking_medications: "yes",
       medication_names: "Thyroxine (Thyronorm) 50 mcg once daily on empty stomach",
@@ -37,7 +51,7 @@ export const DEMO_PATIENTS = [
       tested_hepb_hiv: "never_tested",
       history_tuberculosis: "no",
       environmental_hazards: "yes",
-      hazard_types: ["Agricultural pesticides / gardening chemicals"],
+      hazard_types: ["pesticides"],
       tobacco_use: "partner_only",
       alcohol_use: "neither",
       caffeine_intake: "moderate_2_3",
@@ -49,24 +63,70 @@ export const DEMO_PATIENTS = [
       nutrition_diet: "vegetarian",
       hydration_water: "yes",
       physical_exercise: "regular_30m_5d"
-    }
+    },
+    notes: [
+      {
+        doctor: "Dr. Anita Joshi, MD",
+        date: "15 Sep 2026, 10:15 AM",
+        text: "Discussed preconception folic acid 400 mcg initiation immediately. TSH repeat ordered. Dental consult advised for bleeding gums. Partner advised on tobacco cessation."
+      }
+    ],
+    assessments: [
+      {
+        id: "ASM-1042-01",
+        date: "15 Sep 2026",
+        status: "Completed",
+        language: "English",
+        answers: {
+          planning_pregnancy: "yes",
+          pregnancy_timeframe: "3_to_6m",
+          previous_pregnancy: "no",
+          medical_thyroid: "yes",
+          thyroid_medication: "yes",
+          folic_acid_status: "no",
+          environmental_hazards: "yes",
+          hazard_types: ["pesticides"],
+          tested_rubella: "not_sure"
+        }
+      }
+    ]
   },
   {
     id: "PT-1043",
     name: "Priya Sundaram",
     age: 32,
-    language: "te",
-    completedAt: "Today, 10:15 AM",
-    status: "Completed",
+    dob: "1994-08-20",
+    phone: "+91 94480 98765",
+    address: "12/A, Gandhi Road, T. Nagar",
+    city: "Chennai",
+    marriageDate: "2021-11-18",
+    yearsMarried: 4,
+    previousMarriage: "no",
+    partnerName: "Karthik Sundaram",
+    doctorDescription: "G2P1L1 with previous pregnancy in 2022 complicated by Gestational Diabetes (GDM) and severe Pre-eclampsia leading to emergency Caesarean section at 36 weeks. Known Type 2 diabetes on metformin. First cousin has Beta Thalassemia Major. High priority preconception review.",
+    language: "Telugu",
+    completedAt: "15 Sep 2026, 11:20 AM",
+    status: "Needs Review",
     isDemo: true,
     answers: {
       planning_pregnancy: "yes",
       pregnancy_timeframe: "under_3m",
-      prior_deliveries: "yes",
-      delivery_interval: "more_18m",
-      bariatric_surgery: "no",
       menstrual_regularity: "yes",
       cervical_screening: "not_sure",
+      marital_previous_marriage: "no",
+      consanguineous_marriage: "yes",
+      consanguinity_relationship: "First maternal cousins (related by blood)",
+      previous_pregnancy: "yes",
+      number_of_pregnancies: "2",
+      history_miscarriages: "yes",
+      miscarriage_type: "early_miscarriage",
+      miscarriage_complications: ["dc_done"],
+      history_ectopic: "no",
+      history_premature_labour: "yes",
+      history_birth_defects: "no",
+      prior_deliveries: "yes",
+      delivery_interval: "more_18m",
+      delivery_complications: ["preeclampsia", "gdm", "cesarean"],
       medical_diabetes: "yes",
       diabetes_duration: "1_to_5y",
       diabetes_treatment: "tablets",
@@ -82,15 +142,14 @@ export const DEMO_PATIENTS = [
       medical_thrombophilia: "no",
       medical_periodontal: "no",
       medical_weight: "yes",
-      obstetric_complications: "yes",
-      obstetric_details: ["Gestational Diabetes (Sugar during pregnancy)", "High BP in pregnancy / Pre-eclampsia"],
+      bariatric_surgery: "no",
       prior_surgeries: "yes",
-      surgery_details: "Emergency Caesarean delivery in 2022",
+      surgery_details: "Emergency Caesarean section delivery in 2022; D&C for early miscarriage in 2020",
       taking_medications: "yes",
-      medication_names: "Metformin 500mg BD, Telmisartan 40mg OD (needs immediate pregnancy switch)",
+      medication_names: "Metformin 500mg BD, Telmisartan 40mg OD (requires immediate switch before conception)",
       folic_acid_status: "no",
       family_genetic: "yes",
-      genetic_condition_details: "First cousin has Beta Thalassemia Major",
+      genetic_condition_details: "First cousin has Beta Thalassemia Major. Couple requested carrier screening.",
       tested_rubella: "immune_vaccinated",
       tested_varicella: "had_disease_or_vaccine",
       tested_hepb_hiv: "tested_negative",
@@ -107,23 +166,78 @@ export const DEMO_PATIENTS = [
       nutrition_diet: "vegetarian",
       hydration_water: "no",
       physical_exercise: "minimal_none"
-    }
+    },
+    notes: [
+      {
+        doctor: "Dr. Anita Joshi, MD",
+        date: "02 Mar 2026, 02:30 PM",
+        text: "Initial consult 6 months ago. Advised glycaemic control target HbA1c < 6.5%. Switch Telmisartan to Labetalol."
+      },
+      {
+        doctor: "Dr. Anita Joshi, MD",
+        date: "15 Sep 2026, 11:45 AM",
+        text: "Follow-up assessment completed. High BP persists (142/92). Consanguinity and Thalassemia history noted; Hb HPLC ordered for couple. High-dose folic acid (5 mg) prescribed."
+      }
+    ],
+    assessments: [
+      {
+        id: "ASM-1043-02",
+        date: "15 Sep 2026",
+        status: "Needs Review",
+        language: "Telugu",
+        answers: {
+          planning_pregnancy: "yes",
+          previous_pregnancy: "yes",
+          history_miscarriages: "yes",
+          medical_diabetes: "yes",
+          diabetes_hba1c: "over_6_5",
+          medical_hypertension: "yes",
+          htn_latest_bp: "high_over_140_90",
+          consanguineous_marriage: "yes",
+          family_genetic: "yes",
+          folic_acid_status: "no"
+        }
+      },
+      {
+        id: "ASM-1043-01",
+        date: "02 Mar 2026",
+        status: "Completed",
+        language: "Telugu",
+        answers: {
+          planning_pregnancy: "yes",
+          previous_pregnancy: "yes",
+          medical_diabetes: "yes",
+          diabetes_hba1c: "over_6_5",
+          folic_acid_status: "no"
+        }
+      }
+    ]
   },
   {
     id: "PT-1044",
     name: "Meera Kulkarni",
     age: 26,
-    language: "mr",
-    completedAt: "Today, 11:00 AM",
-    status: "Completed",
+    dob: "2000-01-15",
+    phone: "+91 97654 32109",
+    address: "Flat 103, Shivajinagar",
+    city: "Pune",
+    marriageDate: "2025-05-10",
+    yearsMarried: 1,
+    previousMarriage: "no",
+    partnerName: "Siddharth Kulkarni",
+    doctorDescription: "Nulliparous woman visiting for standard routine preconception assessment. Takes daily folic acid 400 mcg. Good general health with regular cycles. Non-consanguineous marriage.",
+    language: "Marathi",
+    completedAt: "15 Sep 2026, 12:00 PM",
+    status: "Reviewed",
     isDemo: true,
     answers: {
       planning_pregnancy: "yes",
       pregnancy_timeframe: "3_to_6m",
-      prior_deliveries: "no",
-      bariatric_surgery: "no",
       menstrual_regularity: "yes",
       cervical_screening: "yes",
+      marital_previous_marriage: "no",
+      consanguineous_marriage: "no",
+      previous_pregnancy: "no",
       medical_diabetes: "no",
       medical_hypertension: "no",
       medical_thyroid: "no",
@@ -134,6 +248,7 @@ export const DEMO_PATIENTS = [
       medical_thrombophilia: "no",
       medical_periodontal: "no",
       medical_weight: "no",
+      bariatric_surgery: "no",
       prior_surgeries: "no",
       taking_medications: "no",
       folic_acid_status: "yes",
@@ -155,6 +270,28 @@ export const DEMO_PATIENTS = [
       nutrition_diet: "vegetarian",
       hydration_water: "yes",
       physical_exercise: "regular_30m_5d"
-    }
+    },
+    notes: [
+      {
+        doctor: "Dr. Anita Joshi, MD",
+        date: "15 Sep 2026, 12:30 PM",
+        text: "Routine preconception counselling completed. Patient is compliant on 400 mcg folic acid. Routine baseline bloods ordered (CBC, blood group, TSH, urine R/M)."
+      }
+    ],
+    assessments: [
+      {
+        id: "ASM-1044-01",
+        date: "15 Sep 2026",
+        status: "Completed",
+        language: "Marathi",
+        answers: {
+          planning_pregnancy: "yes",
+          previous_pregnancy: "no",
+          folic_acid_status: "yes",
+          folic_acid_dose: "standard_400_800",
+          tested_rubella: "immune_vaccinated"
+        }
+      }
+    ]
   }
 ];
