@@ -1,0 +1,128 @@
+{
+  "portal": "MaatriSakhi-preconception",
+  "portal_version": 1,
+  "patient": {
+    "name": "Fictional Test Patient Beta",
+    "record_id": "TEST-FICT-002"
+  },
+  "encounter": {
+    "date": "2026-09-22"
+  },
+  "doctor_description": "Fictional test visit for preconception counseling; planning pregnancy in 3 to 6 months.",
+  "answers": {
+    "planning_pregnancy": "Yes",
+    "pregnancy_timeframe": "In 3 to 6 months (Recommended)",
+    "menstrual_regularity": "Yes",
+    "previous_pregnancy": "No",
+    "medical_thyroid": "Yes",
+    "thyroid_type": "Hypothyroidism (Underactive)",
+    "thyroid_medication": "Yes",
+    "taking_medications": "Yes",
+    "medication_names": "Thyroxine (Thyronorm) 50 mcg once daily on empty stomach",
+    "tested_rubella": "Not Sure",
+    "tobacco_use": "Neither partner",
+    "nutrition_diet": "Vegetarian"
+  },
+  "history": [
+    {
+      "questionId": "planning_pregnancy",
+      "questionText": "Are you currently planning a pregnancy in the next 3 to 12 months?",
+      "answerValue": "yes",
+      "answerDisplay": "Yes",
+      "section": "intention"
+    },
+    {
+      "questionId": "pregnancy_timeframe",
+      "questionText": "When are you hoping to conceive?",
+      "answerValue": "3_to_6m",
+      "answerDisplay": "In 3 to 6 months (Recommended)",
+      "section": "intention"
+    },
+    {
+      "questionId": "menstrual_regularity",
+      "questionText": "Are your menstrual periods generally regular (occurring every 24 to 35 days)?",
+      "answerValue": "yes",
+      "answerDisplay": "Yes",
+      "section": "intention"
+    },
+    {
+      "questionId": "previous_pregnancy",
+      "questionText": "Have you been pregnant before?",
+      "answerValue": "no",
+      "answerDisplay": "No",
+      "section": "obstetric"
+    },
+    {
+      "questionId": "medical_thyroid",
+      "questionText": "Do you have a thyroid disorder (hypothyroidism or hyperthyroidism)?",
+      "answerValue": "yes",
+      "answerDisplay": "Yes",
+      "section": "medical"
+    },
+    {
+      "questionId": "thyroid_type",
+      "questionText": "What type of thyroid condition do you have?",
+      "answerValue": "hypothyroid",
+      "answerDisplay": "Hypothyroidism (Underactive)",
+      "section": "medical"
+    },
+    {
+      "questionId": "taking_medications",
+      "questionText": "Are you currently taking any regular medications?",
+      "answerValue": "yes",
+      "answerDisplay": "Yes",
+      "section": "medications"
+    },
+    {
+      "questionId": "medication_names",
+      "questionText": "Please list current medication names and doses:",
+      "answerValue": "Thyroxine (Thyronorm) 50 mcg once daily on empty stomach",
+      "answerDisplay": "Thyroxine (Thyronorm) 50 mcg once daily on empty stomach",
+      "section": "medications"
+    },
+    {
+      "questionId": "tested_rubella",
+      "questionText": "Have you been tested for rubella immunity?",
+      "answerValue": "not_sure",
+      "answerDisplay": "Not Sure",
+      "section": "infections"
+    },
+    {
+      "questionId": "tobacco_use",
+      "questionText": "Does either partner use tobacco?",
+      "answerValue": "neither",
+      "answerDisplay": "Neither partner",
+      "section": "lifestyle"
+    },
+    {
+      "questionId": "nutrition_diet",
+      "questionText": "What is the usual diet pattern?",
+      "answerValue": "vegetarian",
+      "answerDisplay": "Vegetarian",
+      "section": "nutrition"
+    }
+  ],
+  "section_notes": {
+    "medical": "TSH 2.1 mIU/L on 2026-08-10; dose stable for 1 year (fictional).",
+    "environment": ""
+  },
+  "extra": {
+    "examination": "BP 110/70 mmHg recorded in this fictional test record.",
+    "assessment": "Healthy adult seeking preconception advice as recorded in this fictional test record.",
+    "plan": ""
+  },
+  "question_meta": {
+    "planning_pregnancy": {
+      "text": "Are you currently planning a pregnancy in the next 3 to 12 months?",
+      "section": "intention"
+    },
+    "menstrual_regularity": {
+      "text": "Are your menstrual periods generally regular?",
+      "section": "intention"
+    },
+    "medical_thyroid": {
+      "text": "Do you have a thyroid disorder?",
+      "section": "medical"
+    }
+  }
+}

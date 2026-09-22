@@ -54,13 +54,39 @@ export default function ContinuousAssessmentPage({
   onSectionNoteChange,
   onSaveDraft,
   onCompleteAssessment,
-  onBackToDashboard
+  onBackToDashboard,
+  submitError = null,
+  onDismissSubmitError = null
 }) {
   const t = UI_TRANSLATIONS[lang] || UI_TRANSLATIONS.en;
   const currentLangObj = LANGUAGES.find(l => l.id === lang) || LANGUAGES[0];
 
   const [activeSectionId, setActiveSectionId] = useState('patient-details');
   const [draftSavedToast, setDraftSavedToast] = useState(false);
+
+  // Explicit clinician documentation for sections with no checkboxes.
+  // Only non-empty values become source data; empty stays undocumented.
+  const [extraNotes, setExtraNotes] = useState({
+    examination: '',
+    assessment: '',
+    plan: ''
+  });
+
+  const handleExtraNoteChange = (key, value) => {
+    setExtraNotes(prev => ({ ...prev, [key]: value }));
+  };
+
+  const handleSubmitWithExtras = () => {
+    console.log('[SUBMIT] button clicked');
+    try {
+      if (onCompleteAssessment) onCompleteAssessment(patientDetails, { ...extraNotes });
+    } catch (err) {
+      // App-level handler also catches; this is a safety net so the
+      // error is never swallowed by the event dispatch.
+      console.error('[SUBMIT] handler error:', err);
+      throw err;
+    }
+  };
 
   // Patient demographic details state
   const [patientDetails, setPatientDetails] = useState({
@@ -319,7 +345,7 @@ export default function ContinuousAssessmentPage({
             <button
               type="button"
               className="btn-complete-nav"
-              onClick={() => onCompleteAssessment && onCompleteAssessment(patientDetails)}
+              onClick={handleSubmitWithExtras}
               id="btn-nav-submit-assessment"
             >
               <CheckCircle2 size={16} />
@@ -370,6 +396,46 @@ export default function ContinuousAssessmentPage({
         <div className="draft-saved-toast animate-fade-in">
           <CheckCircle2 size={16} color="#166534" />
           <span>Draft successfully saved. You can resume anytime from the Doctor Dashboard.</span>
+        </div>
+      )}
+
+      {/* Submit Error Banner — submission must never fail silently */}
+      {submitError && (
+        <div
+          className="submit-error-banner"
+          role="alert"
+          style={{
+            margin: '0.75rem 1rem 0',
+            padding: '0.75rem 1rem',
+            border: '2px solid #dc2626',
+            borderRadius: '8px',
+            background: '#fef2f2',
+            color: '#991b1b',
+            fontSize: '0.9rem',
+            display: 'flex',
+            alignItems: 'flex-start',
+            gap: '0.5rem'
+          }}
+        >
+          <AlertCircle size={18} color="#dc2626" style={{ flexShrink: 0, marginTop: '2px' }} />
+          <span style={{ flex: 1 }}>{submitError}</span>
+          {onDismissSubmitError && (
+            <button
+              type="button"
+              onClick={onDismissSubmitError}
+              style={{
+                border: '1px solid #dc2626',
+                borderRadius: '6px',
+                background: '#fff',
+                color: '#991b1b',
+                padding: '0.15rem 0.6rem',
+                cursor: 'pointer',
+                fontWeight: 700
+              }}
+            >
+              Dismiss
+            </button>
+          )}
         </div>
       )}
 
@@ -587,6 +653,76 @@ export default function ContinuousAssessmentPage({
         })}
 
         {/* ──────────────────────────────────────────────────
+            CLINICIAN DOCUMENTATION: EXAM / ASSESSMENT / PLAN
+            Only explicitly entered text becomes source data.
+            Empty fields remain undocumented (never inferred).
+            ────────────────────────────────────────────────── */}
+        <section className="continuous-section-card" id="sec-clinician-documentation">
+          <div className="section-card-header">
+            <div className="section-title-wrap">
+              <div className="section-icon-badge">
+                <FileText size={20} color="#be123c" />
+              </div>
+              <div>
+                <h2 className="section-heading">CLINICIAN DOCUMENTATION</h2>
+                <div className="section-subtext">Examination, Assessment & Plan — free text only, optional</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="section-notes-dock">
+            <div className="section-notes-header">
+              <label htmlFor="notes-input-examination" className="section-notes-label">
+                Examination and Investigations:
+              </label>
+              <span className="section-notes-hint">(only if examined/investigated — otherwise leave blank)</span>
+            </div>
+            <textarea
+              id="notes-input-examination"
+              rows={2}
+              className="section-notes-textarea"
+              placeholder="e.g. BP 110/70 mmHg, Hb 12.5 g/dL on 2026-09-20..."
+              value={extraNotes.examination}
+              onChange={(e) => handleExtraNoteChange('examination', e.target.value)}
+            />
+          </div>
+
+          <div className="section-notes-dock">
+            <div className="section-notes-header">
+              <label htmlFor="notes-input-assessment" className="section-notes-label">
+                Assessment:
+              </label>
+              <span className="section-notes-hint">(only if assessed — otherwise leave blank)</span>
+            </div>
+            <textarea
+              id="notes-input-assessment"
+              rows={2}
+              className="section-notes-textarea"
+              placeholder="Clinician's documented assessment..."
+              value={extraNotes.assessment}
+              onChange={(e) => handleExtraNoteChange('assessment', e.target.value)}
+            />
+          </div>
+
+          <div className="section-notes-dock">
+            <div className="section-notes-header">
+              <label htmlFor="notes-input-plan" className="section-notes-label">
+                Documented Plan and Follow-up:
+              </label>
+              <span className="section-notes-hint">(only if a plan was documented — otherwise leave blank)</span>
+            </div>
+            <textarea
+              id="notes-input-plan"
+              rows={2}
+              className="section-notes-textarea"
+              placeholder="Clinician's documented plan and follow-up..."
+              value={extraNotes.plan}
+              onChange={(e) => handleExtraNoteChange('plan', e.target.value)}
+            />
+          </div>
+        </section>
+
+        {/* ──────────────────────────────────────────────────
             BOTTOM ACTION PANEL: SAVE DRAFT & COMPLETE ASSESSMENT
             ────────────────────────────────────────────────── */}
         <div className="continuous-bottom-summary-panel">
@@ -634,7 +770,7 @@ export default function ContinuousAssessmentPage({
             <button
               type="button"
               className="btn-complete-large"
-              onClick={() => onCompleteAssessment && onCompleteAssessment(patientDetails)}
+              onClick={handleSubmitWithExtras}
               id="btn-bottom-submit-assessment"
             >
               <CheckCircle2 size={22} />
@@ -645,7 +781,7 @@ export default function ContinuousAssessmentPage({
           <div className="bottom-compliance-disclaimer">
             <ShieldCheck size={14} color="#059669" />
             <span>
-              Clicking <strong>SUBMIT ASSESSMENT</strong> immediately saves patient details, verbal answers, section-level notes, generates structured assessment JSON, calculates analytics, and opens the Doctor Dashboard.
+              Clicking <strong>SUBMIT ASSESSMENT</strong> saves patient details, selected answers, section notes and the clinician documentation above as a <strong>portal submission JSON</strong> (the only source of truth for report generation). Unselected items stay undocumented — never auto-negative. Run <strong>python generator.py submit</strong> on that file to create source data.
             </span>
           </div>
         </div>

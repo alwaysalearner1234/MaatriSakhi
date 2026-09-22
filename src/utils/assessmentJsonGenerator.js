@@ -3,6 +3,7 @@
 // No invented questions, answers, or medical conclusions.
 
 import { SECTIONS_META, QUESTIONS, generateClinicianFlags } from '../data/fogsiQuestions';
+import { UI_TRANSLATIONS } from '../data/translations';
 import { formatAnswerValue } from './answerFormatter';
 
 /**

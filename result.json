@@ -1,0 +1,23 @@
+{
+  "document_type": "PRECONCEPTION",
+  "status": "draft_requires_clinician_review",
+  "model": "muse-spark-1.3-contributor-free",
+  "patient": {
+    "name": "Fictional Test Patient Beta",
+    "record_id": "TEST-FICT-002"
+  },
+  "encounter": {
+    "date": "2026-09-22"
+  },
+  "sections": {
+    "Reason for Consultation": "The fictional test record documents a visit for preconception counseling with pregnancy planned in 3 to 6 months. The patient reports currently planning pregnancy in the next 3 to 12 months, hoping to conceive in 3 to 6 months, and describes menstrual periods as generally regular occurring every 24 to 35 days.",
+    "Medical and Surgical History": "The fictional test record documents no prior pregnancy. It records a thyroid disorder described as hypothyroidism (underactive), with thyroid medication use affirmed, and a clinician note reporting TSH 2.1 mIU/L on 2026-08-10 with the dose stable for 1 year.",
+    "Family History": "Not documented in the supplied data.",
+    "Medications and Allergies": "The fictional test record documents current use of regular medications, listing Thyroxine (Thyronorm) 50 mcg once daily on an empty stomach.",
+    "Immunization Review": "The fictional test record documents uncertainty about rubella immunity testing, recorded as Not Sure.",
+    "Lifestyle and General Health": "The fictional test record documents tobacco use as neither partner and the usual diet pattern as vegetarian.",
+    "Examination and Investigations": "The fictional test record documents blood pressure of 110/70 mmHg.",
+    "Assessment": "The fictional test record describes a healthy adult seeking preconception advice.",
+    "Documented Plan and Follow-up": "Not documented in the supplied data."
+  }
+}

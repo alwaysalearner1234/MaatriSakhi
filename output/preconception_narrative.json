@@ -1,0 +1,23 @@
+{
+  "document_type": "PRECONCEPTION",
+  "status": "draft_requires_clinician_review",
+  "model": "muse-spark-1.3-contributor-free",
+  "patient": {
+    "name": "Fictional Test Patient Alpha",
+    "record_id": "TEST-FICT-001"
+  },
+  "encounter": {
+    "date": "2026-09-21"
+  },
+  "sections": {
+    "Reason for Consultation": "This fictional test encounter is documented as a visit for preconception counseling.",
+    "Medical and Surgical History": "The fictional test record reports no chronic illnesses and no prior surgeries.",
+    "Family History": "Not documented in the supplied data.",
+    "Medications and Allergies": "The fictional test record reports no regular medications and no known drug allergies.",
+    "Immunization Review": "Not documented in the supplied data.",
+    "Lifestyle and General Health": "The fictional test record describes a non-smoker who reports a balanced diet.",
+    "Examination and Investigations": "The fictional test record documents a blood pressure of 110/70 mmHg and a hemoglobin level of 12.5 g/dL.",
+    "Assessment": "The fictional test record describes a healthy adult seeking preconception advice.",
+    "Documented Plan and Follow-up": "Not documented in the supplied data."
+  }
+}

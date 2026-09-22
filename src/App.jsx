@@ -4,7 +4,8 @@ import { QUESTIONS, SECTIONS_META } from './data/fogsiQuestions';
 import { UI_TRANSLATIONS, LANGUAGES } from './data/translations';
 import { DEMO_PATIENTS } from './data/demoData';
 import { formatAnswerValue } from './utils/answerFormatter';
-import { generateAssessmentJson, downloadAssessmentJson } from './utils/assessmentJsonGenerator';
+import { generateAssessmentJson, downloadAssessmentJson, calculateAssessmentAnalytics } from './utils/assessmentJsonGenerator';
+import { buildPortalSubmission, downloadPortalSubmission } from './utils/portalSubmission';
 
 import LandingPage from './components/LandingPage';
 import DoctorLogin from './components/DoctorLogin';
@@ -56,6 +57,9 @@ export default function App() {
   // Clinician portal patient list
   const [patientsList, setPatientsList] = useState([...DEMO_PATIENTS]);
   const [activeDoctorPatientId, setActiveDoctorPatientId] = useState(DEMO_PATIENTS[0].id);
+
+  // Visible submit error (never fail silently on SUBMIT ASSESSMENT)
+  const [submitError, setSubmitError] = useState(null);
 
   const t = UI_TRANSLATIONS[lang] || UI_TRANSLATIONS.en;
   const currentLangObj = LANGUAGES.find(l => l.id === lang) || LANGUAGES[0];
@@ -246,7 +250,12 @@ export default function App() {
   };
 
   // Complete Assessment action (Bottom button and top button)
-  const handleCompleteAssessment = (customPatientDetails = null) => {
+  // Portal Submit -> portal_submission.json (ONLY clinical source of truth).
+  // Backend: python generator.py submit <file> -> source.json -> prepare -> build.
+  const handleCompleteAssessment = (customPatientDetails = null, extraNotes = {}) => {
+    console.log('[SUBMIT] started');
+    setSubmitError(null);
+    try {
     const now = new Date();
     const assessmentDateFormatted = now.toLocaleDateString('en-GB', {
       day: '2-digit',
@@ -290,8 +299,38 @@ export default function App() {
       assessmentStatus: "completed"
     });
 
-    // Automatically download the JSON file
+    // Automatically download the JSON file (legacy dashboard payload)
     downloadAssessmentJson(assessmentJson, patientInfo.name);
+
+    // Portal submission JSON — the ONLY clinical source of truth for
+    // the PRECONCEPTION report pipeline (generator.py submit -> source.json).
+    // Every selected checkbox + every note preserved; unselected omitted.
+    console.log('[SUBMIT] building portal submission');
+    const portalSubmission = buildPortalSubmission({
+      patient: { name: patientInfo.name, record_id: patientId },
+      encounterDate: now.toISOString().slice(0, 10),
+      doctorDescription:
+        customPatientDetails?.doctorDescription || patientInfo.doctorDescription || '',
+      answers,
+      history,
+      sectionNotes,
+      extra: {
+        examination: extraNotes?.examination || '',
+        assessment: extraNotes?.assessment || '',
+        plan: extraNotes?.plan || '',
+      },
+    });
+    console.log('[SUBMIT] submission created', {
+      answers: Object.keys(portalSubmission.answers || {}).length,
+      history: (portalSubmission.history || []).length,
+      sectionNotes: Object.keys(portalSubmission.section_notes || {}).length,
+      questionMeta: Object.keys(portalSubmission.question_meta || {}).length,
+    });
+    const portalOk = downloadPortalSubmission(portalSubmission, patientInfo.name);
+    if (!portalOk) {
+      throw new Error('portal_submission.json download failed in this browser.');
+    }
+    console.log('[SUBMIT] download triggered');
 
     const newAssessmentId = `ASM-${patientId}-${(patientInfo.assessments?.length || 0) + 1}`;
     const newAssessment = {
@@ -339,6 +378,13 @@ export default function App() {
         origin: { y: 0.6 }
       });
     } catch (e) {}
+    console.log('[SUBMIT] completed');
+    } catch (err) {
+      console.error('[SUBMIT] failed:', err);
+      setSubmitError(
+        `Submission failed: ${err?.message || err}. No files were downloaded. Please retry or contact support.`
+      );
+    }
   };
 
   // Start continuous assessment for a specific patient
@@ -604,6 +650,8 @@ export default function App() {
             onSaveDraft={handleSaveDraft}
             onCompleteAssessment={handleCompleteAssessment}
             onBackToDashboard={() => setCurrentView('doctor')}
+            submitError={submitError}
+            onDismissSubmitError={() => setSubmitError(null)}
           />
         )}
       </main>

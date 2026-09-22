@@ -1,0 +1,58 @@
+{
+  "patient": {
+    "name": "Fictional UI Test",
+    "record_id": "PT-TEST-32"
+  },
+  "encounter": {
+    "date": "2026-09-22"
+  },
+  "sections": {
+    "Reason for Consultation": [
+      "Reason for visit as documented: Fictional submit-flow test.",
+      "Q text for planning_pregnancy: yes",
+      "Q text for pregnancy_timeframe: 3_to_6m"
+    ],
+    "Medical and Surgical History": [
+      "Q text for menstrual_regularity: yes",
+      "Q text for cervical_screening: no",
+      "Q text for marital_previous_marriage: no",
+      "Q text for consanguineous_marriage: no",
+      "Q text for previous_pregnancy: no",
+      "Q text for medical_diabetes: no",
+      "Q text for medical_hypertension: no",
+      "Q text for medical_thyroid: not_sure",
+      "Q text for medical_epilepsy: no",
+      "Q text for medical_cardiac: no",
+      "Q text for medical_renal: no",
+      "Q text for medical_autoimmune: no",
+      "Q text for medical_periodontal: no",
+      "Q text for medical_weight: no",
+      "Q text for bariatric_surgery: no",
+      "Q text for prior_surgeries: no",
+      "Q text for taking_medications: yes",
+      "Q text for folic_acid_status: no",
+      "Q text for family_genetic: no",
+      "Q text for tested_rubella: not_sure",
+      "Q text for tested_varicella: had_disease_or_vaccine",
+      "Q text for tested_hepb_hiv: never_tested",
+      "Q text for history_tuberculosis: no",
+      "Q text for environmental_hazards: no",
+      "Q text for tobacco_use: neither",
+      "Q text for alcohol_use: neither",
+      "Q text for caffeine_intake: low_0_1",
+      "Q text for recreational_drugs: no",
+      "Q text for mental_health_history: no",
+      "Q text for nutrition_diet: vegetarian",
+      "Clinician note [Chronic Medical History]: TSH 2.1 mIU/L (fictional test note)."
+    ],
+    "Family History": [],
+    "Medications and Allergies": [],
+    "Immunization Review": [],
+    "Lifestyle and General Health": [],
+    "Examination and Investigations": [
+      "Clinician documented examination/investigations: BP 110/70 mmHg (fictional)."
+    ],
+    "Assessment": [],
+    "Documented Plan and Follow-up": []
+  }
+}

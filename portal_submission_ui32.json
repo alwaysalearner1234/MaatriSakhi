@@ -1,0 +1,538 @@
+{
+  "portal": "MaatriSakhi-preconception",
+  "portal_version": 1,
+  "patient": {
+    "name": "Fictional UI Test",
+    "record_id": "PT-TEST-32"
+  },
+  "encounter": {
+    "date": "2026-09-22"
+  },
+  "doctor_description": "Fictional submit-flow test.",
+  "answers": {
+    "planning_pregnancy": "yes",
+    "pregnancy_timeframe": "3_to_6m",
+    "menstrual_regularity": "yes",
+    "cervical_screening": "no",
+    "marital_previous_marriage": "no",
+    "consanguineous_marriage": "no",
+    "previous_pregnancy": "no",
+    "medical_diabetes": "no",
+    "medical_hypertension": "no",
+    "medical_thyroid": "not_sure",
+    "medical_epilepsy": "no",
+    "medical_cardiac": "no",
+    "medical_renal": "no",
+    "medical_autoimmune": "no",
+    "medical_periodontal": "no",
+    "medical_weight": "no",
+    "bariatric_surgery": "no",
+    "prior_surgeries": "no",
+    "taking_medications": "yes",
+    "folic_acid_status": "no",
+    "family_genetic": "no",
+    "tested_rubella": "not_sure",
+    "tested_varicella": "had_disease_or_vaccine",
+    "tested_hepb_hiv": "never_tested",
+    "history_tuberculosis": "no",
+    "environmental_hazards": "no",
+    "tobacco_use": "neither",
+    "alcohol_use": "neither",
+    "caffeine_intake": "low_0_1",
+    "recreational_drugs": "no",
+    "mental_health_history": "no",
+    "nutrition_diet": "vegetarian"
+  },
+  "history": [
+    {
+      "questionId": "planning_pregnancy",
+      "questionText": "Q text for planning_pregnancy",
+      "answerValue": "yes",
+      "answerDisplay": "yes",
+      "section": "intention"
+    },
+    {
+      "questionId": "pregnancy_timeframe",
+      "questionText": "Q text for pregnancy_timeframe",
+      "answerValue": "3_to_6m",
+      "answerDisplay": "3_to_6m",
+      "section": "intention"
+    },
+    {
+      "questionId": "menstrual_regularity",
+      "questionText": "Q text for menstrual_regularity",
+      "answerValue": "yes",
+      "answerDisplay": "yes",
+      "section": "medical"
+    },
+    {
+      "questionId": "cervical_screening",
+      "questionText": "Q text for cervical_screening",
+      "answerValue": "no",
+      "answerDisplay": "no",
+      "section": "medical"
+    },
+    {
+      "questionId": "marital_previous_marriage",
+      "questionText": "Q text for marital_previous_marriage",
+      "answerValue": "no",
+      "answerDisplay": "no",
+      "section": "medical"
+    },
+    {
+      "questionId": "consanguineous_marriage",
+      "questionText": "Q text for consanguineous_marriage",
+      "answerValue": "no",
+      "answerDisplay": "no",
+      "section": "medical"
+    },
+    {
+      "questionId": "previous_pregnancy",
+      "questionText": "Q text for previous_pregnancy",
+      "answerValue": "no",
+      "answerDisplay": "no",
+      "section": "medical"
+    },
+    {
+      "questionId": "medical_diabetes",
+      "questionText": "Q text for medical_diabetes",
+      "answerValue": "no",
+      "answerDisplay": "no",
+      "section": "medical"
+    },
+    {
+      "questionId": "medical_hypertension",
+      "questionText": "Q text for medical_hypertension",
+      "answerValue": "no",
+      "answerDisplay": "no",
+      "section": "medical"
+    },
+    {
+      "questionId": "medical_thyroid",
+      "questionText": "Q text for medical_thyroid",
+      "answerValue": "not_sure",
+      "answerDisplay": "not_sure",
+      "section": "medical"
+    },
+    {
+      "questionId": "medical_epilepsy",
+      "questionText": "Q text for medical_epilepsy",
+      "answerValue": "no",
+      "answerDisplay": "no",
+      "section": "medical"
+    },
+    {
+      "questionId": "medical_cardiac",
+      "questionText": "Q text for medical_cardiac",
+      "answerValue": "no",
+      "answerDisplay": "no",
+      "section": "medical"
+    },
+    {
+      "questionId": "medical_renal",
+      "questionText": "Q text for medical_renal",
+      "answerValue": "no",
+      "answerDisplay": "no",
+      "section": "medical"
+    },
+    {
+      "questionId": "medical_autoimmune",
+      "questionText": "Q text for medical_autoimmune",
+      "answerValue": "no",
+      "answerDisplay": "no",
+      "section": "medical"
+    },
+    {
+      "questionId": "medical_periodontal",
+      "questionText": "Q text for medical_periodontal",
+      "answerValue": "no",
+      "answerDisplay": "no",
+      "section": "medical"
+    },
+    {
+      "questionId": "medical_weight",
+      "questionText": "Q text for medical_weight",
+      "answerValue": "no",
+      "answerDisplay": "no",
+      "section": "medical"
+    },
+    {
+      "questionId": "bariatric_surgery",
+      "questionText": "Q text for bariatric_surgery",
+      "answerValue": "no",
+      "answerDisplay": "no",
+      "section": "medical"
+    },
+    {
+      "questionId": "prior_surgeries",
+      "questionText": "Q text for prior_surgeries",
+      "answerValue": "no",
+      "answerDisplay": "no",
+      "section": "medical"
+    },
+    {
+      "questionId": "taking_medications",
+      "questionText": "Q text for taking_medications",
+      "answerValue": "yes",
+      "answerDisplay": "yes",
+      "section": "medical"
+    },
+    {
+      "questionId": "folic_acid_status",
+      "questionText": "Q text for folic_acid_status",
+      "answerValue": "no",
+      "answerDisplay": "no",
+      "section": "medical"
+    },
+    {
+      "questionId": "family_genetic",
+      "questionText": "Q text for family_genetic",
+      "answerValue": "no",
+      "answerDisplay": "no",
+      "section": "medical"
+    },
+    {
+      "questionId": "tested_rubella",
+      "questionText": "Q text for tested_rubella",
+      "answerValue": "not_sure",
+      "answerDisplay": "not_sure",
+      "section": "medical"
+    },
+    {
+      "questionId": "tested_varicella",
+      "questionText": "Q text for tested_varicella",
+      "answerValue": "had_disease_or_vaccine",
+      "answerDisplay": "had_disease_or_vaccine",
+      "section": "medical"
+    },
+    {
+      "questionId": "tested_hepb_hiv",
+      "questionText": "Q text for tested_hepb_hiv",
+      "answerValue": "never_tested",
+      "answerDisplay": "never_tested",
+      "section": "medical"
+    },
+    {
+      "questionId": "history_tuberculosis",
+      "questionText": "Q text for history_tuberculosis",
+      "answerValue": "no",
+      "answerDisplay": "no",
+      "section": "medical"
+    },
+    {
+      "questionId": "environmental_hazards",
+      "questionText": "Q text for environmental_hazards",
+      "answerValue": "no",
+      "answerDisplay": "no",
+      "section": "medical"
+    },
+    {
+      "questionId": "tobacco_use",
+      "questionText": "Q text for tobacco_use",
+      "answerValue": "neither",
+      "answerDisplay": "neither",
+      "section": "medical"
+    },
+    {
+      "questionId": "alcohol_use",
+      "questionText": "Q text for alcohol_use",
+      "answerValue": "neither",
+      "answerDisplay": "neither",
+      "section": "medical"
+    },
+    {
+      "questionId": "caffeine_intake",
+      "questionText": "Q text for caffeine_intake",
+      "answerValue": "low_0_1",
+      "answerDisplay": "low_0_1",
+      "section": "medical"
+    },
+    {
+      "questionId": "recreational_drugs",
+      "questionText": "Q text for recreational_drugs",
+      "answerValue": "no",
+      "answerDisplay": "no",
+      "section": "medical"
+    },
+    {
+      "questionId": "mental_health_history",
+      "questionText": "Q text for mental_health_history",
+      "answerValue": "no",
+      "answerDisplay": "no",
+      "section": "medical"
+    },
+    {
+      "questionId": "nutrition_diet",
+      "questionText": "Q text for nutrition_diet",
+      "answerValue": "vegetarian",
+      "answerDisplay": "vegetarian",
+      "section": "medical"
+    }
+  ],
+  "section_notes": {
+    "medical": "TSH 2.1 mIU/L (fictional test note)."
+  },
+  "extra": {
+    "examination": "BP 110/70 mmHg (fictional).",
+    "assessment": "",
+    "plan": ""
+  },
+  "question_meta": {
+    "planning_pregnancy": {
+      "text": "Are you currently planning a pregnancy in the next 3 to 12 months?",
+      "section": "intention"
+    },
+    "pregnancy_timeframe": {
+      "text": "When are you hoping to conceive?",
+      "section": "intention"
+    },
+    "menstrual_regularity": {
+      "text": "Are your menstrual periods generally regular (occurring every 24 to 35 days)?",
+      "section": "intention"
+    },
+    "cervical_screening": {
+      "text": "Have you had a routine cervical screening (Pap smear) in the past 3 years?",
+      "section": "intention"
+    },
+    "marital_previous_marriage": {
+      "text": "Have you or your partner been married before?",
+      "section": "marital"
+    },
+    "prev_partner_children": {
+      "text": "Did you have any children or pregnancies from a previous partner?",
+      "section": "marital"
+    },
+    "prev_partner_counts": {
+      "text": "Please share the number of children or pregnancies from the previous partner:",
+      "section": "marital"
+    },
+    "consanguineous_marriage": {
+      "text": "Are you and your partner related by blood (for example, cousins or family relations)?",
+      "section": "marital"
+    },
+    "consanguinity_relationship": {
+      "text": "What is the relationship, if you know? (You can type or speak)",
+      "section": "marital"
+    },
+    "previous_pregnancy": {
+      "text": "Have you been pregnant before?",
+      "section": "obstetric"
+    },
+    "number_of_pregnancies": {
+      "text": "How many times have you been pregnant in total?",
+      "section": "obstetric"
+    },
+    "history_miscarriages": {
+      "text": "Have you ever had a miscarriage or pregnancy loss?",
+      "section": "obstetric"
+    },
+    "miscarriage_type": {
+      "text": "Was the miscarriage early (under 12 weeks) or late (12 to 20 weeks)?",
+      "section": "obstetric"
+    },
+    "miscarriage_complications": {
+      "text": "Did you experience any of these complications during the miscarriage? (Select all that apply)",
+      "section": "obstetric"
+    },
+    "history_ectopic": {
+      "text": "Have you ever had an ectopic pregnancy (pregnancy outside the uterus, e.g. in the fallopian tube)?",
+      "section": "obstetric"
+    },
+    "ectopic_details": {
+      "text": "Please share details of the ectopic pregnancy (which side, surgery or injection treatment):",
+      "section": "obstetric"
+    },
+    "history_premature_labour": {
+      "text": "Have you ever experienced premature labour or delivered a baby before 37 weeks?",
+      "section": "obstetric"
+    },
+    "history_birth_defects": {
+      "text": "Have you had any previous pregnancy or child with a birth defect or congenital condition?",
+      "section": "obstetric"
+    },
+    "birth_defect_details": {
+      "text": "What do you know about the birth defect? (You can type or use voice)",
+      "section": "obstetric"
+    },
+    "prior_deliveries": {
+      "text": "Have you had any full-term deliveries (babies delivered after 37 weeks)?",
+      "section": "obstetric"
+    },
+    "delivery_interval": {
+      "text": "How long has it been since your most recent delivery?",
+      "section": "obstetric"
+    },
+    "delivery_complications": {
+      "text": "Did you experience any of these complications in previous pregnancies/deliveries? (Select all that apply)",
+      "section": "obstetric"
+    },
+    "medical_diabetes": {
+      "text": "Do you have diabetes or high blood sugar?",
+      "section": "medical"
+    },
+    "diabetes_duration": {
+      "text": "How long have you had diabetes?",
+      "section": "medical"
+    },
+    "diabetes_treatment": {
+      "text": "What treatment are you currently using for diabetes?",
+      "section": "medical"
+    },
+    "diabetes_hba1c": {
+      "text": "What was your latest HbA1c level, if known?",
+      "section": "medical"
+    },
+    "medical_hypertension": {
+      "text": "Do you have high blood pressure (hypertension)?",
+      "section": "medical"
+    },
+    "htn_medications": {
+      "text": "Are you currently taking daily blood pressure medication?",
+      "section": "medical"
+    },
+    "htn_latest_bp": {
+      "text": "What is your typical blood pressure reading?",
+      "section": "medical"
+    },
+    "medical_thyroid": {
+      "text": "Do you have a thyroid disorder (hypothyroidism or hyperthyroidism)?",
+      "section": "medical"
+    },
+    "thyroid_type": {
+      "text": "What type of thyroid condition do you have?",
+      "section": "medical"
+    },
+    "thyroid_medication": {
+      "text": "Are you currently taking daily thyroid medication (such as Thyronorm or Eltroxin)?",
+      "section": "medical"
+    },
+    "medical_epilepsy": {
+      "text": "Have you ever had epilepsy, seizures, or fits?",
+      "section": "medical"
+    },
+    "epilepsy_medication": {
+      "text": "Please share which anti-seizure medication you are currently taking (or type None):",
+      "section": "medical"
+    },
+    "medical_cardiac": {
+      "text": "Do you have any heart condition, rheumatic heart disease, murmur, or valve disease?",
+      "section": "medical"
+    },
+    "medical_renal": {
+      "text": "Do you have chronic kidney / renal disease or history of frequent kidney infections?",
+      "section": "medical"
+    },
+    "medical_autoimmune": {
+      "text": "Do you have an autoimmune condition like Lupus (SLE) or Rheumatoid Arthritis?",
+      "section": "medical"
+    },
+    "medical_periodontal": {
+      "text": "Do you have bleeding gums, loose teeth, or frequent gum infections?",
+      "section": "medical"
+    },
+    "bariatric_surgery": {
+      "text": "Have you ever had weight-loss (bariatric) surgery?",
+      "section": "surgical"
+    },
+    "bariatric_interval": {
+      "text": "Was this surgery done within the past 12 to 24 months?",
+      "section": "surgical"
+    },
+    "prior_surgeries": {
+      "text": "Have you had any other major surgeries (such as pelvic, uterine, appendix, or gallbladder)?",
+      "section": "surgical"
+    },
+    "surgery_details": {
+      "text": "Please share surgery type, approximate year, or complications (if known):",
+      "section": "surgical"
+    },
+    "taking_medications": {
+      "text": "Are you currently taking any prescription medications, Ayurvedic remedies, or daily supplements?",
+      "section": "medications"
+    },
+    "medication_names": {
+      "text": "Please list the names, dose, and reasons for taking these medications:",
+      "section": "medications"
+    },
+    "folic_acid_status": {
+      "text": "Are you currently taking daily folic acid tablets?",
+      "section": "medications"
+    },
+    "folic_acid_dose": {
+      "text": "What dose of folic acid are you taking?",
+      "section": "medications"
+    },
+    "family_genetic": {
+      "text": "Does anyone in your or your partner's family have Thalassemia, Sickle Cell Disease, Haemophilia, or other genetic conditions?",
+      "section": "family"
+    },
+    "genetic_condition_details": {
+      "text": "Please specify which condition and which family member is affected:",
+      "section": "family"
+    },
+    "tested_rubella": {
+      "text": "Have you received the Rubella (German Measles / MMR) vaccine, or tested immune to Rubella?",
+      "section": "infections"
+    },
+    "tested_varicella": {
+      "text": "Have you had Chickenpox (Varicella) disease in childhood, or received the Chickenpox vaccine?",
+      "section": "infections"
+    },
+    "tested_hepb_hiv": {
+      "text": "Have you or your partner ever been tested for Hepatitis B, HIV, or Syphilis?",
+      "section": "infections"
+    },
+    "history_tuberculosis": {
+      "text": "Have you ever been treated for Tuberculosis (TB) in the past?",
+      "section": "infections"
+    },
+    "environmental_hazards": {
+      "text": "Does your work or home environment involve pesticides, industrial solvents, radiation, or extreme heat?",
+      "section": "environment"
+    },
+    "hazard_types": {
+      "text": "What specific environmental exposures are present? (Select all that apply)",
+      "section": "environment"
+    },
+    "tobacco_use": {
+      "text": "Do you or your partner currently smoke bidis/cigarettes, vape, or chew tobacco (gutkha, khaini)?",
+      "section": "lifestyle"
+    },
+    "alcohol_use": {
+      "text": "Do you or your partner consume alcoholic drinks?",
+      "section": "lifestyle"
+    },
+    "caffeine_intake": {
+      "text": "How many cups of coffee, tea, or cola drinks do you typically consume per day?",
+      "section": "lifestyle"
+    },
+    "mental_health_history": {
+      "text": "Have you ever been treated for depression, anxiety, or another mental health condition?",
+      "section": "mental"
+    },
+    "psychiatric_medications": {
+      "text": "Are you currently taking any psychiatric medications or antidepressants?",
+      "section": "mental"
+    },
+    "perinatal_mental_history": {
+      "text": "Did you experience severe anxiety or depression during or after a previous pregnancy?",
+      "section": "mental"
+    },
+    "stress_safety": {
+      "text": "Do you feel emotionally supported and safe in your current relationship and home?",
+      "section": "mental"
+    },
+    "nutrition_diet": {
+      "text": "What is your typical dietary pattern?",
+      "section": "nutrition"
+    },
+    "hydration_water": {
+      "text": "Do you drink at least 8 to 10 glasses (2 to 2.5 litres) of water daily?",
+      "section": "nutrition"
+    },
+    "physical_exercise": {
+      "text": "How often do you engage in moderate physical exercise (such as brisk walking or yoga)?",
+      "section": "nutrition"
+    }
+  }
+}
