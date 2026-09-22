@@ -6148,7 +6148,7 @@ input, textarea, select {
 .guidance-item {
   background: #f8fafc;
   border: 1px solid #e2e8f0;
-  border-radius: var(--radius-sm),
+  border-radius: var(--radius-sm);
   padding: 0.75rem;
   font-size: 0.8rem;
 }
