@@ -60,12 +60,12 @@ export default function LandingPage({
             role="button"
             tabIndex={0}
           >
-            <div className="landing-brand-icon">
-              <Heart size={20} color="#e11d48" fill="#e11d48" />
-            </div>
+            <span className="landing-brand-mark">
+              <img src="/MaatriSakhi.png" alt="MaatriSakhi logo" />
+            </span>
             <div className="landing-brand-text">
-              <span className="landing-brand-name">Preconception Care Assistant</span>
-              <span className="landing-brand-badge">FOGSI Safe Motherhood Guidelines</span>
+              <span className="landing-brand-name">MaatriSakhi</span>
+              <span className="landing-brand-badge">Preconception Care Assistant</span>
             </div>
           </div>
 
@@ -267,7 +267,7 @@ export default function LandingPage({
             <p className="hero-subtitle">
               A clinician-operated preconception assessment tool. The doctor conducts
               the verbal consultation, records the patient's answers, notes section-level
-              observations, and generates instant clinical analytics and JSON.
+              observations, and organizes responses into structured clinical insights and JSON.
             </p>
 
             {/* Primary & Secondary CTAs */}
