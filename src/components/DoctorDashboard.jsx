@@ -252,14 +252,21 @@ export default function DoctorDashboard({
     <div className="doctor-portal-container animate-fade-in">
       {/* Clinician Portal Header */}
       <div className="doctor-header-card">
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.4rem' }}>
-            <Stethoscope size={24} color="#f43f5e" />
-            <h1>Preconception Pre-Visit Clinician Portal</h1>
+        <div className="doctor-header-brand">
+          <img
+            src="/MaatriSakhi.png"
+            alt="MaatriSakhi - Preconception Care Assistant"
+            className="maatri-logo maatri-logo-dashboard"
+          />
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.4rem' }}>
+              <Stethoscope size={24} color="#f43f5e" />
+              <h1>Preconception Pre-Visit Clinician Portal</h1>
+            </div>
+            <p>
+              FOGSI Safe Motherhood Guidelines • Dual Patient-Clinician Workflow
+            </p>
           </div>
-          <p>
-            FOGSI Safe Motherhood Guidelines • Dual Patient-Clinician Workflow
-          </p>
         </div>
 
         <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }} className="btn-print-hide">

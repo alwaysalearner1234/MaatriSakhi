@@ -32,6 +32,14 @@ export default function WelcomeScreen({
           </button>
         </div>
 
+        <div className="maatri-logo-wrapper">
+          <img
+            src="/MaatriSakhi.png"
+            alt="MaatriSakhi - Preconception Care Assistant"
+            className="maatri-logo maatri-logo-welcome"
+          />
+        </div>
+
         <h1 className="welcome-title">{t.welcomeHeading}</h1>
         <p className="welcome-subtitle">{t.welcomeSubheading}</p>
 
