@@ -15,7 +15,7 @@
 
 ---
 
-> **A clinical-grade, conversational pre-consultation information collection and risk-screening web application based on the FOGSI Safe Motherhood Committee guidelines.**
+
 ---
 
 Live URL: https://maatrisakhi.onrender.com/
