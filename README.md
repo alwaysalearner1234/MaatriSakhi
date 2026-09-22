@@ -1,7 +1,21 @@
 # 🌸 MaatriSakhi — Preconception Care Assistant
 
-> **A clinical-grade, conversational pre-consultation information collection and risk-screening web application based on the FOGSI Safe Motherhood Committee guidelines.**
+<p align="center">
+  <img src="./public/MaatriSakhi.png" alt="MaatriSakhi Logo" width="350"/>
+</p>
 
+<p align="center">
+  <strong>AI-Assisted Preconception Care & Clinical Screening</strong>
+</p>
+
+<p align="center">
+  A conversational pre-consultation assistant designed to help patients
+  organize their information before meeting a healthcare professional.
+</p>
+
+---
+
+> **A clinical-grade, conversational pre-consultation information collection and risk-screening web application based on the FOGSI Safe Motherhood Committee guidelines.**
 ---
 
 Live URL: https://maatrisakhi.onrender.com/
