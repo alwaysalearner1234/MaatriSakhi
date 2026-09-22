@@ -114,7 +114,8 @@ input, textarea, select {
   background: rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--border-subtle);
-  padding: 0.75rem 1.25rem;
+  padding: 0.6rem 1.25rem;
+  min-height: 72px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -6726,7 +6727,31 @@ input, textarea, select {
   padding: 4px;
 }
 
+/* Navbar branding — replaces the old 40px badge so the logo is clearly visible */
+.maatri-logo.maatri-logo-navbar {
+  height: 52px;
+  width: auto;
+  max-width: none;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+@media (max-width: 1024px) {
+  .maatri-logo.maatri-logo-navbar {
+    height: 48px;
+  }
+}
+
 @media (max-width: 640px) {
+  .top-navbar {
+    min-height: 64px;
+    padding: 0.5rem 1rem;
+  }
+
+  .maatri-logo.maatri-logo-navbar {
+    height: 42px;
+  }
+
   .maatri-logo-welcome {
     width: 160px;
   }

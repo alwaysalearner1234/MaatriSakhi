@@ -471,9 +471,11 @@ export default function App() {
             style={{ cursor: 'pointer' }}
             title="Go to Home"
           >
-            <div className="brand-badge-icon">
-              <Heart size={20} />
-            </div>
+            <img
+              src="/MaatriSakhi.png"
+              alt="MaatriSakhi - Preconception Care Assistant"
+              className="maatri-logo maatri-logo-navbar"
+            />
             <div className="brand-titles">
               <span className="brand-name">Preconception Care Assistant</span>
               <span className="brand-tagline">FOGSI Safe Motherhood Guidelines</span>
