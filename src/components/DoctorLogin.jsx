@@ -1,121 +1,180 @@
-import React, { useState } from 'react';
-import { Stethoscope, Lock, Mail, ArrowRight, Sparkles, Shield, ArrowLeft } from 'lucide-react';
+import React, { useState, useEffect } from "react";
+import { UI_TRANSLATIONS, LANGUAGES } from "../data/translations";
+import {
+  Users,
+  Globe,
+  CheckCircle2,
+  X,
+  Mail,
+  Phone,
+  Lock,
+  Unlock,
+  Shield,
+  ArrowRight,
+  RefreshCw,
+} from "lucide-react";
 
-export default function DoctorLogin({ onLoginSuccess, onBackToHome }) {
-  const [doctorId, setDoctorId] = useState('');
-  const [password, setPassword] = useState('');
-  const [errorMsg, setErrorMsg] = useState('');
+export default function DoctorLogin({
+  lang,
+  onSelectLanguage,
+  onNavigate,
+}) {
+  const t = UI_TRANSLATIONS[lang] || UI_TRANSLATIONS.en;
+  const currentLangObj = LANGUAGES.find((l) => l.id === lang) || LANGUAGES[0];
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [language, setLanguage] = useState(lang || "en");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [loggedIn, setLoggedIn] = useState(false);
 
-  const handleLogin = (e) => {
-    e?.preventDefault();
-    if (!doctorId.trim()) {
-      setErrorMsg('Please enter your Doctor ID or Email');
+  // Check if already logged in (read token from localStorage on mount)
+  useEffect(() => {
+    const token = localStorage.getItem("doctor_token");
+    if (token) {
+      // Verify the token by calling the backend
+      fetch("/api/auth/me", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+        .then((res) => {
+          if (res.ok) {
+            setLoggedIn(true);
+            onNavigate("doctor");
+          } else {
+            // Token invalid, remove it
+            localStorage.removeItem("doctor_token");
+            setLoggedIn(false);
+          }
+        })
+        .catch(() => {
+          localStorage.removeItem("doctor_token");
+          setLoggedIn(false);
+        });
+    }
+  }, [onNavigate]);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!email || !password) {
+      setError(t.requiredNotice || "Please enter email and password");
       return;
     }
-    setErrorMsg('');
-    onLoginSuccess({
-      name: doctorId.includes('@') ? 'Dr. Priya Desai, MD (OBGYN)' : `Dr. ${doctorId}`,
-      id: doctorId || 'DOC-FOGSI-882',
-      role: 'Consultant Obstetrician & Gynaecologist'
-    });
+
+    setError("");
+    setLoading(true);
+
+    try {
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email,
+          password,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        // Store JWT token in localStorage
+        if (data.access_token) {
+          localStorage.setItem("doctor_token", data.access_token);
+        }
+        setLoading(false);
+        setLoggedIn(true);
+        setTimeout(() => onNavigate("doctor"), 500);
+      } else {
+        setError(data.detail || "Login failed. Please check your credentials.");
+        setLoading(false);
+      }
+    } catch (err) {
+      setError("Network error. Please try again.");
+      setLoading(false);
+    }
   };
 
-  const handleDemoDoctorLogin = () => {
-    setDoctorId('dr.anita.fogsi@clinic.org');
-    setPassword('••••••••••••');
-    setErrorMsg('');
-    setTimeout(() => {
-      onLoginSuccess({
-        name: 'Dr. Anita Joshi, MD, DGO (FOGSI)',
-        id: 'DOC-FOGSI-402',
-        role: 'Consultant Obstetrician & Gynaecologist'
-      });
-    }, 250);
-  };
+  if (loggedIn) {
+    return null; // Already logged in, redirect handled by useEffect
+  }
 
   return (
-    <div className="doctor-login-page animate-fade-in">
-      <div className="login-card-container">
-        {/* Back Link */}
-        <button
-          className="back-link-btn"
-          onClick={onBackToHome}
-          type="button"
-          style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', color: 'var(--text-muted)', marginBottom: '1rem', fontSize: '0.9rem' }}
-        >
-          <ArrowLeft size={16} />
-          <span>Back to Home</span>
-        </button>
-
-        <div className="login-card">
-          <div className="login-card-header">
-            <div className="login-icon-badge">
-              <Stethoscope size={28} color="#e11d48" />
-            </div>
-            <h2>Doctor Portal</h2>
-            <p>FOGSI Preconception Pre-Visit Clinician Management</p>
+    <div className="auth-card-container animate-fade-in">
+      <div className="auth-card">
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
+          <div className="auth-badge">
+            <span>🌸 MaatriSakhi</span>
           </div>
 
-          {errorMsg && (
-            <div className="login-error-alert">
-              <span>{errorMsg}</span>
-            </div>
-          )}
+          <button
+            className="nav-pill-btn"
+            onClick={onSelectLanguage}
+            title="Switch Language"
+            type="button"
+          >
+            <Globe size={15} />
+            <span>{currentLangObj.native}</span>
+          </button>
+        </div>
 
-          <form onSubmit={handleLogin} className="login-form">
-            <div className="form-group">
-              <label htmlFor="doctorId">Doctor ID / Email</label>
-              <div className="input-with-icon">
-                <Mail size={18} color="var(--text-muted)" />
-                <input
-                  id="doctorId"
-                  type="text"
-                  placeholder="e.g. dr.anita@hospital.org or DOC-102"
-                  value={doctorId}
-                  onChange={(e) => setDoctorId(e.target.value)}
-                  autoComplete="username"
-                />
-              </div>
-            </div>
+        <div className="maatri-logo-wrapper">
+          <img
+            src="/MaatriSakhi.png"
+            alt="MaatriSakhi - Preconception Care Assistant"
+            className="maatri-logo maatri-logo-auth"
+          />
+        </div>
 
-            <div className="form-group">
-              <label htmlFor="password">Password</label>
-              <div className="input-with-icon">
-                <Lock size={18} color="var(--text-muted)" />
-                <input
-                  id="password"
-                  type="password"
-                  placeholder="Enter clinic password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  autoComplete="current-password"
-                />
-              </div>
-            </div>
+        <h2 className="auth-title">{t.appTitle}</h2>
+        <p className="auth-subtitle">Based on FOGSI Safe Motherhood Guidelines</p>
 
-            <div className="login-button-group">
-              <button type="submit" className="btn-primary-lg" style={{ width: '100%', justifyContent: 'center' }}>
-                <span>Login</span>
-                <ArrowRight size={18} />
-              </button>
-
-              <button
-                type="button"
-                className="btn-demo-outline"
-                onClick={handleDemoDoctorLogin}
-                style={{ width: '100%', justifyContent: 'center', marginTop: '0.75rem' }}
-                id="btn-demo-doctor"
-              >
-                <Sparkles size={16} color="#e11d48" />
-                <span>Demo Doctor (Instant Access)</span>
-              </button>
-            </div>
-          </form>
-
-          <div className="login-security-notice">
-            <Shield size={14} color="var(--sage-600)" />
-            <span>FOGSI Clinical Data Security • Prototype Mock Authentication</span>
+        {error && (
+          <div className="error-banner">
+            <span>{error}</span>
           </div>
+        )}
+
+        <form className="auth-form" onSubmit={handleSubmit}>
+          <div className="form-group">
+            <label htmlFor="email">{t.email || "Email"}</label>
+            <input
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder={t.emailPlaceholder || "Enter your email"}
+              style={{ width: "100%" }}
+            />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="password">{t.password || "Password"}</label>
+            <input
+              id="password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder={t.passwordPlaceholder || "Enter password"}
+              style={{ width: "100%" }}
+            />
+          </div>
+
+          <button type="submit" className="submit-btn">
+            {t.login || "Login"}
+          </button>
+        </form>
+
+        <div className="auth-links">
+          <span>{t.dontHaveAccount || "Don't have an account?"}</span>
+          <button
+            onClick={() => onNavigate("/signup")}
+            className="signup-link"
+          >
+            {t.signup || "Sign Up"}
+          </button>
         </div>
       </div>
     </div>
