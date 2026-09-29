@@ -1,181 +1,172 @@
 import React, { useState, useEffect } from "react";
 import { UI_TRANSLATIONS, LANGUAGES } from "../data/translations";
-import {
-  Users,
-  Globe,
-  CheckCircle2,
-  X,
-  Mail,
-  Phone,
-  Lock,
-  Unlock,
-  Shield,
-  ArrowRight,
-  RefreshCw,
-} from "lucide-react";
+import { Stethoscope, Mail, Lock, Eye, EyeOff, LogIn, Sparkles } from "lucide-react";
+import "./DoctorLogin.css";
 
-export default function DoctorLogin({
-  lang,
-  onSelectLanguage,
-  onNavigate,
-}) {
+// Backend address: set VITE_API_URL in .env.local (local) or in Render (live)
+const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8000";
+
+export default function DoctorLogin({ lang, onSelectLanguage, onNavigate }) {
   const t = UI_TRANSLATIONS[lang] || UI_TRANSLATIONS.en;
-  const currentLangObj = LANGUAGES.find((l) => l.id === lang) || LANGUAGES[0];
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [language, setLanguage] = useState(lang || "en");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [loggedIn, setLoggedIn] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
-  // Check if already logged in (read token from localStorage on mount)
+  // If a saved token is still valid, go straight to the dashboard
   useEffect(() => {
     const token = localStorage.getItem("doctor_token");
-    if (token) {
-      // Verify the token by calling the backend
-      fetch("/api/auth/me", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+    if (!token) return;
+    fetch(`${API_BASE}/api/auth/me`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((res) => {
+        if (res.ok) onNavigate("doctor");
+        else localStorage.removeItem("doctor_token");
       })
-        .then((res) => {
-          if (res.ok) {
-            setLoggedIn(true);
-            onNavigate("doctor");
-          } else {
-            // Token invalid, remove it
-            localStorage.removeItem("doctor_token");
-            setLoggedIn(false);
-          }
-        })
-        .catch(() => {
-          localStorage.removeItem("doctor_token");
-          setLoggedIn(false);
-        });
-    }
+      .catch(() => {
+        /* backend offline: stay on the login screen */
+      });
   }, [onNavigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!email || !password) {
-      setError(t.requiredNotice || "Please enter email and password");
+      setError("Please enter your email and password.");
       return;
     }
-
     setError("");
     setLoading(true);
 
+    let response;
     try {
-      const response = await fetch("/api/auth/login", {
+      response = await fetch(`${API_BASE}/api/auth/login`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email,
-          password,
-        }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
       });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        // Store JWT token in localStorage
-        if (data.access_token) {
-          localStorage.setItem("doctor_token", data.access_token);
-        }
-        setLoading(false);
-        setLoggedIn(true);
-        setTimeout(() => onNavigate("doctor"), 500);
-      } else {
-        setError(data.detail || "Login failed. Please check your credentials.");
-        setLoading(false);
-      }
-    } catch (err) {
-      setError("Network error. Please try again.");
+    } catch {
+      setError("Can't reach the server. Please make sure the backend is running.");
       setLoading(false);
+      return;
     }
+
+    let data = {};
+    try {
+      data = await response.json();
+    } catch {
+      /* non-JSON reply */
+    }
+
+    if (response.ok && data.access_token) {
+      localStorage.setItem("doctor_token", data.access_token);
+      onNavigate("doctor");
+    } else if (response.status === 401) {
+      setError("Incorrect email or password.");
+    } else {
+      setError(
+        typeof data.detail === "string"
+          ? data.detail
+          : `Login failed (error ${response.status}). Please try again.`
+      );
+    }
+    setLoading(false);
   };
 
-  if (loggedIn) {
-    return null; // Already logged in, redirect handled by useEffect
-  }
+  const fillDemoAccount = () => {
+    setEmail("doctor@maatri.sakhi");
+    setPassword("doctor123");
+    setError("");
+  };
 
   return (
-    <div className="auth-card-container animate-fade-in">
-      <div className="auth-card">
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
-          <div className="auth-badge">
-            <span>🌸 MaatriSakhi</span>
+    <div className="dl-page">
+      <div className="dl-card">
+        <div className="dl-header">
+          <div className="dl-badge">
+            <Stethoscope size={26} />
           </div>
-
-          <button
-            className="nav-pill-btn"
-            onClick={onSelectLanguage}
-            title="Switch Language"
-            type="button"
-          >
-            <Globe size={15} />
-            <span>{currentLangObj.native}</span>
-          </button>
+          <h2 className="dl-title">{t.loginTitle || "Doctor Login"}</h2>
+          <p className="dl-subtitle">
+            {t.loginSubtitle || "Access your patient dashboard"}
+          </p>
         </div>
-
-        <div className="maatri-logo-wrapper">
-          <img
-            src="/MaatriSakhi.png"
-            alt="MaatriSakhi - Preconception Care Assistant"
-            className="maatri-logo maatri-logo-auth"
-          />
-        </div>
-
-        <h2 className="auth-title">{t.appTitle}</h2>
-        <p className="auth-subtitle">Based on FOGSI Safe Motherhood Guidelines</p>
 
         {error && (
-          <div className="error-banner">
-            <span>{error}</span>
+          <div className="dl-error" role="alert">
+            {error}
           </div>
         )}
 
-        <form className="auth-form" onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label htmlFor="email">{t.email || "Email"}</label>
+        <form className="dl-form" onSubmit={handleSubmit} noValidate>
+          <label className="dl-label" htmlFor="dl-email">
+            {t.email || "Email"}
+          </label>
+          <div className="dl-input-wrap">
+            <Mail size={18} className="dl-input-icon" />
             <input
-              id="email"
+              id="dl-email"
               type="email"
+              autoComplete="email"
+              className="dl-input"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder={t.emailPlaceholder || "Enter your email"}
-              style={{ width: "100%" }}
             />
           </div>
 
-          <div className="form-group">
-            <label htmlFor="password">{t.password || "Password"}</label>
+          <label className="dl-label" htmlFor="dl-password">
+            {t.password || "Password"}
+          </label>
+          <div className="dl-input-wrap">
+            <Lock size={18} className="dl-input-icon" />
             <input
-              id="password"
-              type="password"
+              id="dl-password"
+              type={showPassword ? "text" : "password"}
+              autoComplete="current-password"
+              className="dl-input dl-input-pw"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder={t.passwordPlaceholder || "Enter password"}
-              style={{ width: "100%" }}
             />
+            <button
+              type="button"
+              className="dl-eye"
+              onClick={() => setShowPassword((s) => !s)}
+              aria-label={showPassword ? "Hide password" : "Show password"}
+            >
+              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
           </div>
 
-          <button type="submit" className="submit-btn">
-            {t.login || "Login"}
+          <button type="submit" className="dl-submit" disabled={loading}>
+            {loading ? (
+              <>
+                <span className="dl-spinner" /> {t.loggingIn || "Logging in..."}
+              </>
+            ) : (
+              <>
+                <LogIn size={18} /> {t.login || "Login"}
+              </>
+            )}
           </button>
         </form>
 
-        <div className="auth-links">
-          <span>{t.dontHaveAccount || "Don't have an account?"}</span>
+        <button type="button" className="dl-demo" onClick={fillDemoAccount}>
+          <Sparkles size={16} /> {t.useDemoAccount || "Use demo account"}
+        </button>
+
+        <p className="dl-footer">
+          {t.dontHaveAccount || "Don't have an account?"}{" "}
           <button
-            onClick={() => onNavigate("/signup")}
-            className="signup-link"
+            type="button"
+            className="dl-link"
+            onClick={() => onNavigate("signup")}
           >
             {t.signup || "Sign Up"}
           </button>
-        </div>
+        </p>
       </div>
     </div>
   );

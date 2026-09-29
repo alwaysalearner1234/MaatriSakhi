@@ -14,11 +14,12 @@ Endpoints:
   GET  /patients/{patient_id}   - Get specific patient (doctor-only)
   POST /consent                 - Record patient consent
 """
-
+from dotenv import load_dotenv
+load_dotenv(override=True)
 import os
 import json
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from typing import Optional
 
 from fastapi import FastAPI, HTTPException, Depends, status, BackgroundTasks
@@ -29,6 +30,8 @@ import asyncpg
 from jsonschema import validate, Draft202012Validator, ValidationError
 import jwt
 
+from database_init import initialize_database  # ADD THIS
+
 # ---------------------------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------------------------
@@ -37,23 +40,17 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 if not DATABASE_URL:
     raise ValueError("DATABASE_URL environment variable not set; app refusing to start without it")
 
-# Frontend API URL - Render Static Site + Python Web Service have different URLs
-VITE_API_URL = os.getenv("VITE_API_URL", "").rstrip("/")
-
-# CORS allow-list: exact origins only (no regex). Read from env; add frontend URL + localhost dev.
-FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
-ALLOWED_ORIGINS_STR = os.getenv("ALLOWED_ORIGINS", "")
-ALLOWED_ORIGINS = [o.strip() for o in ALLOWED_ORIGINS_STR.split(",") if o.strip()]
-# Always include the frontend URL and localhost for development
-if FRONTEND_URL not in ALLOWED_ORIGINS:
-    ALLOWED_ORIGINS.insert(0, FRONTEND_URL)
-if "http://localhost:5173" not in ALLOWED_ORIGINS and "http://127.0.0.1:5173" not in ALLOWED_ORIGINS:
-    ALLOWED_ORIGINS.insert(0, "http://localhost:5173")
-
 # SECRET_KEY is required - no hardcoded default
 SECRET_KEY = os.getenv("SECRET_KEY")
 if not SECRET_KEY:
     raise ValueError("SECRET_KEY environment variable not set; app refusing to start without it")
+
+# CORS allow-list: exact origins read from env; default to localhost for dev
+ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "http://localhost:5173").split(",")
+
+# DATABASE_URL may be a Supabase Session pooler URL; ensure sslmode=require is set
+if DATABASE_URL and "sslmode" not in DATABASE_URL:
+    DATABASE_URL = DATABASE_URL + ("&" if "?" in DATABASE_URL else "?") + "sslmode=require"
 
 # ---------------------------------------------------------------------------
 # Pydantic models
@@ -176,6 +173,38 @@ ENTRY_SCHEMA = {
     },
 }
 
+DOCTOR_SCHEMA = {
+    "type": "object",
+    "additionalProperties": False,
+    "required": ["id", "email", "name", "password_hash"],
+    "properties": {
+        "id": {"type": "string", "format": "uuid"},
+        "email": {"type": "string", "format": "email"},
+        "name": {"type": "string", "minLength": 1},
+        "password_hash": {"type": "string"},
+    },
+}
+
+PATIENT_SCHEMA = {
+    "type": "object",
+    "additionalProperties": False,
+    "required": ["id", "doctor_id", "name", "consent_given", "consent_at"],
+    "properties": {
+        "id": {"type": "string", "format": "uuid"},
+        "doctor_id": {"type": "string", "format": "uuid"},
+        "name": {"type": "string", "minLength": 1},
+        "phone": {"type": ["string", "null"]},
+        "language": {
+            "type": "string",
+            "enum": ["en", "hi", "te", "ta", "kn", "ml", "bn", "mr"],
+        },
+        "consent_given": {"type": "boolean"},
+        "consent_at": {"type": ["string", "null"], "format": "date-time"},
+        "doctor_description": {"type": ["string", "null"]},
+        "status": {"type": "string", "default": "Active"},
+    },
+}
+
 VISIT_SCHEMA = {
     "type": "object",
     "additionalProperties": False,
@@ -191,7 +220,8 @@ VISIT_SCHEMA = {
 }
 
 # Create validators
-mother_validator = Draft202012Validator(MOTHER_SCHEMA)
+doctor_validator = Draft202012Validator(DOCTOR_SCHEMA)
+patient_validator = Draft202012Validator(PATIENT_SCHEMA)
 pregnancy_validator = Draft202012Validator(PREGNANCY_SCHEMA)
 entry_validator = Draft202012Validator(ENTRY_SCHEMA)
 visit_validator = Draft202012Validator(VISIT_SCHEMA)
@@ -341,28 +371,13 @@ async def startup():
     """Create database tables and doctor table on startup."""
     await initialize_database()
     
-    # Create doctors table if not exists
-    async with app.db.acquire() as connection:
-        await connection.execute("""
-            CREATE TABLE IF NOT EXISTS doctors (
-                id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-                email VARCHAR(255) UNIQUE NOT NULL,
-                name VARCHAR(255) NOT NULL,
-                password_hash VARCHAR(255) NOT NULL,
-                created_at TIMESTAMPTZ DEFAULT NOW()
-            );
-        """)
-    
-    # Create a default demo doctor if none exists
-    count = await connection.fetchval("SELECT COUNT(*) FROM doctors")
-    if count == 0:
-        hashed_pw = hash_password("doctor123")
-        await connection.execute(
-            "INSERT INTO doctors (email, name, password_hash) VALUES ($1, $2, $3)",
-            "doctor@maatri.sakhi",
-            "Demo Doctor",
-            hashed_pw,
-        )
+    # Create database pool
+    app.db = await asyncpg.create_pool(
+        DATABASE_URL,
+        min_size=2,
+        max_size=10,
+        command_timeout=60,
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -372,7 +387,7 @@ async def startup():
 @app.get("/health", include_in_schema=False)
 async def health():
     """Health check endpoint."""
-    return {"status": "ok", "timestamp": datetime.now(timezone.utc).isostring()}
+    return {"status": "ok", "timestamp": datetime.now(timezone.utc).isoformat()}
 
 
 @app.post("/auth/login")
@@ -407,6 +422,23 @@ async def login(
         "token_type": "bearer",
         "doctor": {"id": str(row["id"]), "name": row["name"], "email": row["email"]},
     }
+
+
+@app.post("/api/auth/login")
+async def api_login(
+    payload: DoctorLogin,
+    connection=Depends(get_db),
+):
+    """API version of doctor login with /api prefix."""
+    return await login(payload, connection)
+
+
+@app.get("/api/auth/me")
+async def api_me(
+    current_doctor=Depends(get_current_doctor),
+):
+    """Get current logged-in doctor with Bearer token."""
+    return current_doctor
 
 
 @app.post("/auth/signup")
@@ -461,8 +493,15 @@ async def create_patient(
 ):
     """Create a new patient for the authenticated doctor.
     
-    Requires valid JWT. Patient consent is recorded via consentGiven flag.
+    Requires valid JWT. Patient consent is required (consent_given must be True).
+    Returns 422 if consent_given is not True.
     """
+    if not payload.consentGiven:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Patient consent must be given before creating a patient record.",
+        )
+    
     patient_id = str(uuid.uuid4())
     now = datetime.now(timezone.utc).isoformat()
     

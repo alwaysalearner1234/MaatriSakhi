@@ -151,12 +151,12 @@ MaatriSakhi/
 
 ### Prerequisites
 - Render.com account
-- PostgreSQL database instance
+- Supabase project (free tier OK)
 
-### 1. Add PostgreSQL
-1. Go to Render dashboard → New PostgreSQL
-2. Note the connection string (e.g., `postgresql://user:password@hostname:5432/dbname`)
-3. Set as `DATABASE_URL` environment variable
+### 1. Get Supabase Connection String
+1. Go to Supabase dashboard → Settings → Database
+2. Note the "Connection string" for the "Postgres pooler (session mode)"
+3. It will look like: `postgresql://postgres:password@db.xxx.supabase.co:6543/postgres`
 
 ### 2. Add Python Web Service
 1. Go to Render dashboard → New Web Service
@@ -169,12 +169,13 @@ MaatriSakhi/
 ### 3. Environment Variables
 Add these to the Web Service:
 ```env
-DATABASE_URL=postgresql://user:password@hostname:5432/dbname
+DATABASE_URL=postgresql://postgres:password@db.xxx.supabase.co:6543/postgres?sslmode=require
 SECRET_KEY=your-super-secret-key-for-jwt-tokens
 NODE_ENV=production
+ALLOWED_ORIGINS=http://localhost:5173
 ```
 
-### 4. Requirements.txt
+### 4. requirements.txt
 Create `requirements.txt` at the project root:
 ```
 fastapi
