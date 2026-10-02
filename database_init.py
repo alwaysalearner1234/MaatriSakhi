@@ -390,7 +390,7 @@ async def initialize_database():
     finally:
         await pool.close()
 
-    print("✅ Database initialized successfully")
+    print("Database initialized successfully")
 
 
 # ---------------------------------------------------------------------------
