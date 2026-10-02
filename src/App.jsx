@@ -8,6 +8,14 @@ import { generateAssessmentJson, downloadAssessmentJson, calculateAssessmentAnal
 import { buildPortalSubmission, downloadPortalSubmission } from './utils/portalSubmission';
 
 import LandingPage from './components/LandingPage';
+import MotherAuth from './components/mother/MotherAuth';
+import ConsentScreen from './components/mother/ConsentScreen';
+import ModeSwitch from './components/mother/ModeSwitch';
+import PregnancySetupFlow from './components/mother/PregnancySetupFlow';
+import PregnancyDashboard from './components/mother/PregnancyDashboard';
+import ChildSetupFlow from './components/mother/ChildSetupFlow';
+import ChildDashboard from './components/mother/ChildDashboard';
+import { getLocalMother, motherLogout, listChildren } from './utils/motherApi';
 import DoctorLogin from './components/DoctorLogin';
 import AddPatientModal from './components/AddPatientModal';
 import PatientProfileView from './components/PatientProfileView';
@@ -39,6 +47,13 @@ export default function App() {
 
   // Authenticated doctor state
   const [authenticatedDoctor, setAuthenticatedDoctor] = useState(null);
+
+  // Mother flow state (new "I'm pregnant" journey; existing planning flow untouched)
+  // Views: 'mother_auth' -> 'mother_consent' -> 'mode_switch' -> 'pregnancy_setup' -> 'pregnancy_dashboard'
+  //        -> 'child_setup' -> 'child_dashboard' (Child Health Card tagged to Pregnancy)
+  const [mother, setMother] = useState(() => getLocalMother());
+  const [pregnancy, setPregnancy] = useState(null);
+  const [child, setChild] = useState(null);
 
   // Doctor Dashboard initial tab & recent completion trigger
   const [doctorTab, setDoctorTab] = useState('visualisation');
@@ -443,6 +458,35 @@ export default function App() {
     setCurrentView('doctor');
   };
 
+  // Mother handlers (new flow only — planning flow below is unchanged)
+  const handleMotherAuthed = (m) => {
+    setMother(m);
+    setCurrentView(m?.consent_given ? 'mode_switch' : 'mother_consent');
+  };
+  const handleMotherConsented = (m) => {
+    setMother(m);
+    setCurrentView('mode_switch');
+  };
+  const handleModeSelect = (mode) => {
+    if (mode === 'planning') handleStartPatientAssessment(null); // existing flow, unchanged
+    else setCurrentView(pregnancy ? 'pregnancy_dashboard' : 'pregnancy_setup');
+  };
+  const handleMotherLogout = () => {
+    motherLogout();
+    setMother(null);
+    setPregnancy(null);
+    setChild(null);
+    setCurrentView('landing');
+  };
+  // After pregnancy is set (new or returning), refresh linked Child Health Card
+  const refreshChildFor = async (preg) => {
+    if (!preg?.id) { setChild(null); return; }
+    try {
+      const rows = await listChildren(preg.id);
+      setChild(rows?.[0] || null);
+    } catch { setChild(null); }
+  };
+
   // Patient update callback from doctor dashboard
   const handleUpdatePatient = (updatedPatient) => {
     setPatientsList(prev => prev.map(p => p.id === updatedPatient.id ? updatedPatient : p));
@@ -516,6 +560,26 @@ export default function App() {
               <span style={{ color: '#e11d48' }}>Try Demo</span>
             </button>
 
+            {/* Mother entry (new "I'm pregnant" journey) */}
+            <button
+              className={`nav-pill-btn ${String(currentView).startsWith('mother') || currentView === 'mode_switch' || currentView === 'pregnancy_setup' || currentView === 'pregnancy_dashboard' || currentView === 'child_setup' || currentView === 'child_dashboard' ? 'active' : ''}`}
+              onClick={() => {
+                if (!mother) setCurrentView('mother_auth');
+                else if (!mother.consent_given) setCurrentView('mother_consent');
+                else setCurrentView('mode_switch');
+              }}
+              type="button"
+              title="Mother login — Planning vs I'm pregnant"
+            >
+              <Heart size={15} />
+              <span>{mother ? `Mother: ${mother.name?.split(' ')[0] || 'Account'}` : 'Mother Login'}</span>
+            </button>
+            {mother && (
+              <button className="nav-pill-btn" onClick={handleMotherLogout} type="button" title="Mother logout">
+                <span>Logout</span>
+              </button>
+            )}
+
             {/* Doctor Portal toggle */}
             <button
               className={`nav-pill-btn ${currentView === 'doctor' || currentView === 'doctor_login' ? 'active' : ''}`}
@@ -574,6 +638,50 @@ export default function App() {
           <DoctorLogin
             onLoginSuccess={handleDoctorLoginSuccess}
             onBackToHome={() => setCurrentView('landing')}
+          />
+        )}
+
+        {/* MOTHER FLOW (new; planning flow below unchanged) */}
+        {currentView === 'mother_auth' && (
+          <MotherAuth onAuthed={handleMotherAuthed} onBack={() => setCurrentView('landing')} />
+        )}
+        {currentView === 'mother_consent' && mother && (
+          <ConsentScreen mother={mother} onConsented={handleMotherConsented} />
+        )}
+        {currentView === 'mode_switch' && mother?.consent_given && (
+          <ModeSwitch mother={mother} onSelect={handleModeSelect} />
+        )}
+        {currentView === 'pregnancy_setup' && mother?.consent_given && (
+          <PregnancySetupFlow
+            onDone={(p) => { setPregnancy(p); refreshChildFor(p); setCurrentView('pregnancy_dashboard'); }}
+            onBack={() => setCurrentView('mode_switch')}
+          />
+        )}
+        {currentView === 'pregnancy_dashboard' && mother?.consent_given && pregnancy && (
+          <PregnancyDashboard
+            mother={mother}
+            pregnancy={pregnancy}
+            child={child}
+            onUpdateMother={(m) => { setMother(m); if (!m.consent_given) setCurrentView('mother_consent'); }}
+            onBack={() => setCurrentView('mode_switch')}
+            onCreateChild={() => setCurrentView('child_setup')}
+            onOpenChild={() => setCurrentView('child_dashboard')}
+          />
+        )}
+        {currentView === 'child_setup' && mother?.consent_given && pregnancy && (
+          <ChildSetupFlow
+            pregnancy={pregnancy}
+            onDone={(c) => { setChild(c); setCurrentView('child_dashboard'); }}
+            onBack={() => setCurrentView('pregnancy_dashboard')}
+          />
+        )}
+        {currentView === 'child_dashboard' && mother?.consent_given && child && (
+          <ChildDashboard
+            child={child}
+            pregnancy={pregnancy}
+            onChildUpdated={(c) => setChild(c)}
+            onBack={() => setCurrentView('pregnancy_dashboard')}
+            onGoPregnancy={() => setCurrentView('pregnancy_dashboard')}
           />
         )}
 

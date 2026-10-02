@@ -607,6 +607,410 @@ async def record_consent(
 
 
 # ---------------------------------------------------------------------------
+# Mother auth + Pregnancy / Entry / Visit (new "I'm pregnant" flow)
+# Tables: Mother -> Pregnancy -> Entry, Visit (FK chain, see db/schema.sql)
+# Frontend: React MotherAuth / ConsentScreen / PregnancySetupFlow
+# ---------------------------------------------------------------------------
+
+class MotherSignup(BaseModel):
+    name: str = Field(..., min_length=1)
+    email: EmailStr = Field(...)
+    password: str = Field(..., min_length=6)
+    language: str = Field(default="en")
+
+
+class MotherLogin(BaseModel):
+    email: str = Field(...)
+    password: str = Field(...)
+
+
+class MotherConsent(BaseModel):
+    consent_given: bool = Field(...)
+
+
+class PregnancyUpsert(BaseModel):
+    current_week: Optional[int] = Field(default=None, ge=1, le=42)
+    next_visit_date: Optional[str] = Field(default=None)
+    has_high_bp: Optional[bool] = Field(default=None)
+    has_gestational_diabetes: Optional[bool] = Field(default=None)
+    bp_limit_systolic: Optional[int] = Field(default=None, ge=50, le=250)
+    bp_limit_diastolic: Optional[int] = Field(default=None, ge=30, le=150)
+    sugar_limit_fasting: Optional[int] = Field(default=None, ge=40, le=400)
+    sugar_limit_post_meal: Optional[int] = Field(default=None, ge=40, le=600)
+
+
+class EntryCreate(BaseModel):
+    pregnancy_id: str = Field(...)
+    type: str = Field(..., pattern="^(bp|sugar|symptom|report)$")
+    value_json: dict = Field(...)
+    note: Optional[str] = Field(default=None)
+
+
+class VisitCreate(BaseModel):
+    pregnancy_id: str = Field(...)
+    visit_date: str = Field(...)
+    summary_text: Optional[str] = Field(default=None)
+
+
+def _mother_token(mother_id: str, email: str):
+    return create_access_token(data={"sub": mother_id, "email": email, "role": "mother"})
+
+
+async def get_current_mother(token: str = Depends(oauth2_scheme), connection=Depends(get_db)):
+    """Mother JWT (role=mother). Rejects doctor tokens."""
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+        if payload.get("role") != "mother":
+            raise HTTPException(status_code=401, detail="Mother login required")
+        mother_id: str = payload.get("sub")
+        if not mother_id:
+            raise HTTPException(status_code=401, detail="Invalid credentials")
+    except jwt.PyJWTError:
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+    row = await connection.fetchrow(
+        "SELECT id, name, email, language, consent_given, consent_at FROM mothers WHERE id = $1::uuid",
+        mother_id,
+    )
+    if row is None:
+        raise HTTPException(status_code=401, detail="Mother not found")
+    return {
+        "id": str(row["id"]), "name": row["name"], "email": row["email"],
+        "language": row["language"], "consent_given": row["consent_given"],
+        "consent_at": row["consent_at"].isoformat() if row["consent_at"] else None,
+    }
+
+
+async def _mother_owns_pregnancy(connection, mother_id: str, pregnancy_id: str):
+    row = await connection.fetchrow(
+        "SELECT id FROM pregnancies WHERE id = $1::uuid AND mother_id = $2::uuid",
+        pregnancy_id, mother_id,
+    )
+    return row is not None
+
+
+@app.post("/mothers/signup")
+async def mother_signup(payload: MotherSignup, connection=Depends(get_db)):
+    """Mother sign-up. Consent is FALSE until ConsentScreen is accepted."""
+    existing = await connection.fetchrow("SELECT id FROM mothers WHERE email = $1", payload.email)
+    if existing:
+        raise HTTPException(status_code=409, detail="An account with this email already exists")
+    mother_id = str(uuid.uuid4())
+    await connection.execute(
+        """INSERT INTO mothers (id, name, email, password_hash, language, consent_given)
+           VALUES ($1::uuid, $2, $3, $4, $5, FALSE)""",
+        mother_id, payload.name, payload.email, hash_password(payload.password), payload.language,
+    )
+    return {
+        "access_token": _mother_token(mother_id, payload.email),
+        "token_type": "bearer",
+        "mother": {"id": mother_id, "name": payload.name, "email": payload.email,
+                   "consent_given": False, "consent_at": None},
+    }
+
+
+@app.post("/mothers/login")
+async def mother_login(payload: MotherLogin, connection=Depends(get_db)):
+    row = await connection.fetchrow(
+        "SELECT id, name, email, password_hash, language, consent_given, consent_at "
+        "FROM mothers WHERE email = $1", payload.email,
+    )
+    if not row or not verify_password(payload.password, row["password_hash"]):
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+    return {
+        "access_token": _mother_token(str(row["id"]), row["email"]),
+        "token_type": "bearer",
+        "mother": {"id": str(row["id"]), "name": row["name"], "email": row["email"],
+                   "language": row["language"], "consent_given": row["consent_given"],
+                   "consent_at": row["consent_at"].isoformat() if row["consent_at"] else None},
+    }
+
+
+@app.get("/mothers/me")
+async def mother_me(current_mother=Depends(get_current_mother)):
+    return current_mother
+
+
+@app.post("/mothers/consent")
+async def mother_consent(payload: MotherConsent, current_mother=Depends(get_current_mother),
+                         connection=Depends(get_db)):
+    """Save consent_given (bool) + consent_date (timestamp). Shown BEFORE any health data."""
+    now = datetime.now(timezone.utc) if payload.consent_given else None
+    await connection.execute(
+        "UPDATE mothers SET consent_given = $1, consent_at = $2, updated_at = NOW() WHERE id = $3::uuid",
+        payload.consent_given, now, current_mother["id"],
+    )
+    return {"consent_given": payload.consent_given,
+            "consent_at": now.isoformat() if now else None,
+            "message": "Consent recorded — you can revoke access at any time." if payload.consent_given
+                       else "Consent revoked — health tracking is paused."}
+
+
+@app.post("/pregnancies")
+async def create_pregnancy(payload: PregnancyUpsert, current_mother=Depends(get_current_mother),
+                           connection=Depends(get_db)):
+    """Pregnancy Profile Setup. Requires consent first."""
+    if not current_mother["consent_given"]:
+        raise HTTPException(status_code=403, detail="Please accept the consent screen first")
+    pid = str(uuid.uuid4())
+    now = datetime.now(timezone.utc).isoformat()
+    await connection.execute(
+        """INSERT INTO pregnancies (id, mother_id, current_week, next_visit_date, has_high_bp,
+            has_gestational_diabetes, bp_limit_systolic, bp_limit_diastolic,
+            sugar_limit_fasting, sugar_limit_post_meal, created_at, updated_at)
+           VALUES ($1::uuid, $2::uuid, $3, $4, $5, $6, $7, $8, $9, $10, $11, $11)""",
+        pid, current_mother["id"], payload.current_week, payload.next_visit_date,
+        payload.has_high_bp, payload.has_gestational_diabetes, payload.bp_limit_systolic,
+        payload.bp_limit_diastolic, payload.sugar_limit_fasting, payload.sugar_limit_post_meal, now,
+    )
+    # Mirror next_visit_date into Visit so the dashboard can count down to it
+    if payload.next_visit_date:
+        await connection.execute(
+            "INSERT INTO visits (pregnancy_id, visit_date, summary_text) VALUES ($1::uuid, $2, $3)",
+            pid, payload.next_visit_date, "Next doctor visit (from profile setup)",
+        )
+    row = await connection.fetchrow("SELECT * FROM pregnancies WHERE id = $1::uuid", pid)
+    return dict(row)
+
+
+@app.get("/pregnancies/my")
+async def my_pregnancies(current_mother=Depends(get_current_mother), connection=Depends(get_db)):
+    rows = await connection.fetch(
+        "SELECT * FROM pregnancies WHERE mother_id = $1::uuid ORDER BY created_at DESC",
+        current_mother["id"],
+    )
+    return [dict(r) for r in rows]
+
+
+@app.put("/pregnancies/{pregnancy_id}")
+async def update_pregnancy(pregnancy_id: str, payload: PregnancyUpsert,
+                           current_mother=Depends(get_current_mother), connection=Depends(get_db)):
+    if not await _mother_owns_pregnancy(connection, current_mother["id"], pregnancy_id):
+        raise HTTPException(status_code=404, detail="Pregnancy not found")
+    await connection.execute(
+        """UPDATE pregnancies SET current_week = COALESCE($1, current_week),
+            next_visit_date = COALESCE($2, next_visit_date),
+            has_high_bp = COALESCE($3, has_high_bp),
+            has_gestational_diabetes = COALESCE($4, has_gestational_diabetes),
+            bp_limit_systolic = COALESCE($5, bp_limit_systolic),
+            bp_limit_diastolic = COALESCE($6, bp_limit_diastolic),
+            sugar_limit_fasting = COALESCE($7, sugar_limit_fasting),
+            sugar_limit_post_meal = COALESCE($8, sugar_limit_post_meal),
+            updated_at = NOW() WHERE id = $9::uuid""",
+        payload.current_week, payload.next_visit_date, payload.has_high_bp,
+        payload.has_gestational_diabetes, payload.bp_limit_systolic, payload.bp_limit_diastolic,
+        payload.sugar_limit_fasting, payload.sugar_limit_post_meal, pregnancy_id,
+    )
+    return dict(await connection.fetchrow("SELECT * FROM pregnancies WHERE id = $1::uuid", pregnancy_id))
+
+
+@app.post("/entries")
+async def create_entry(payload: EntryCreate, current_mother=Depends(get_current_mother),
+                       connection=Depends(get_db)):
+    """Tracker data -> Entry table (bp tracker / sugar tracker)."""
+    if not await _mother_owns_pregnancy(connection, current_mother["id"], payload.pregnancy_id):
+        raise HTTPException(status_code=404, detail="Pregnancy not found")
+    eid = str(uuid.uuid4())
+    await connection.execute(
+        "INSERT INTO entries (id, pregnancy_id, type, value_json, note) VALUES ($1::uuid, $2::uuid, $3, $4, $5)",
+        eid, payload.pregnancy_id, payload.type, json.dumps(payload.value_json), payload.note,
+    )
+    return dict(await connection.fetchrow("SELECT * FROM entries WHERE id = $1::uuid", eid))
+
+
+@app.get("/entries")
+async def list_entries(pregnancy_id: str, entry_type: Optional[str] = None,
+                       current_mother=Depends(get_current_mother), connection=Depends(get_db)):
+    if not await _mother_owns_pregnancy(connection, current_mother["id"], pregnancy_id):
+        raise HTTPException(status_code=404, detail="Pregnancy not found")
+    if entry_type:
+        rows = await connection.fetch(
+            "SELECT * FROM entries WHERE pregnancy_id = $1::uuid AND type = $2 ORDER BY created_at DESC",
+            pregnancy_id, entry_type,
+        )
+    else:
+        rows = await connection.fetch(
+            "SELECT * FROM entries WHERE pregnancy_id = $1::uuid ORDER BY created_at DESC", pregnancy_id,
+        )
+    return [dict(r) for r in rows]
+
+
+@app.post("/visits")
+async def create_visit(payload: VisitCreate, current_mother=Depends(get_current_mother),
+                       connection=Depends(get_db)):
+    if not await _mother_owns_pregnancy(connection, current_mother["id"], payload.pregnancy_id):
+        raise HTTPException(status_code=404, detail="Pregnancy not found")
+    vid = str(uuid.uuid4())
+    await connection.execute(
+        "INSERT INTO visits (id, pregnancy_id, visit_date, summary_text) VALUES ($1::uuid, $2::uuid, $3, $4)",
+        vid, payload.pregnancy_id, payload.visit_date, payload.summary_text,
+    )
+    return dict(await connection.fetchrow("SELECT * FROM visits WHERE id = $1::uuid", vid))
+
+
+@app.get("/visits")
+async def list_visits(pregnancy_id: str, current_mother=Depends(get_current_mother),
+                      connection=Depends(get_db)):
+    if not await _mother_owns_pregnancy(connection, current_mother["id"], pregnancy_id):
+        raise HTTPException(status_code=404, detail="Pregnancy not found")
+    rows = await connection.fetch(
+        "SELECT * FROM visits WHERE pregnancy_id = $1::uuid ORDER BY visit_date ASC", pregnancy_id,
+    )
+    return [dict(r) for r in rows]
+
+
+# ---------------------------------------------------------------------------
+# Child Health Card (tagged to Mother + specific Pregnancy = prenatal environment)
+# Philosophy: the child grew in the mother for 9 months; that environment
+# (high BP / gestational diabetes / doctor limits) is inherited as read-only
+# "Prenatal Environment Context" on every child response.
+# ---------------------------------------------------------------------------
+
+class ChildCreate(BaseModel):
+    pregnancy_id: str = Field(...)
+    name: str = Field(default="Baby", min_length=1)
+    birth_date: Optional[str] = Field(default=None)
+    gender: Optional[str] = Field(default=None, pattern="^(female|male|other)$")
+    birth_weight_kg: Optional[float] = Field(default=None, ge=0.3, le=8)
+    birth_length_cm: Optional[float] = Field(default=None)
+    delivery_type: Optional[str] = Field(default=None)
+    current_weight_kg: Optional[float] = Field(default=None)
+    current_height_cm: Optional[float] = Field(default=None)
+    blood_group: Optional[str] = Field(default=None)
+    notes: Optional[str] = Field(default=None)
+
+
+class ChildUpdate(BaseModel):
+    name: Optional[str] = Field(default=None, min_length=1)
+    birth_date: Optional[str] = Field(default=None)
+    gender: Optional[str] = Field(default=None, pattern="^(female|male|other)$")
+    birth_weight_kg: Optional[float] = Field(default=None, ge=0.3, le=8)
+    birth_length_cm: Optional[float] = Field(default=None)
+    delivery_type: Optional[str] = Field(default=None)
+    current_weight_kg: Optional[float] = Field(default=None)
+    current_height_cm: Optional[float] = Field(default=None)
+    blood_group: Optional[str] = Field(default=None)
+    notes: Optional[str] = Field(default=None)
+
+
+def _prenatal_context(pregnancy_row) -> dict:
+    """Read-only inherited environment pulled from the linked Pregnancy record."""
+    p = dict(pregnancy_row)
+    return {
+        "pregnancy_id": str(p["id"]),
+        "current_week": p.get("current_week"),
+        "has_high_bp": p.get("has_high_bp"),
+        "has_gestational_diabetes": p.get("has_gestational_diabetes"),
+        "bp_limit_systolic": p.get("bp_limit_systolic"),
+        "bp_limit_diastolic": p.get("bp_limit_diastolic"),
+        "sugar_limit_fasting": p.get("sugar_limit_fasting"),
+        "sugar_limit_post_meal": p.get("sugar_limit_post_meal"),
+    }
+
+
+async def _mother_owns_child(connection, mother_id: str, child_id: str):
+    row = await connection.fetchrow(
+        "SELECT id FROM children WHERE id = $1::uuid AND mother_id = $2::uuid",
+        child_id, mother_id,
+    )
+    return row is not None
+
+
+@app.post("/children")
+async def create_child(payload: ChildCreate, current_mother=Depends(get_current_mother),
+                       connection=Depends(get_db)):
+    """Create a Child Health Card linked to Mother + one specific Pregnancy (one card per pregnancy)."""
+    if not current_mother["consent_given"]:
+        raise HTTPException(status_code=403, detail="Please accept the consent screen first")
+    if not await _mother_owns_pregnancy(connection, current_mother["id"], payload.pregnancy_id):
+        raise HTTPException(status_code=404, detail="Pregnancy not found")
+    existing = await connection.fetchrow(
+        "SELECT id FROM children WHERE pregnancy_id = $1::uuid", payload.pregnancy_id
+    )
+    if existing:
+        raise HTTPException(status_code=409, detail="A Child Health Card already exists for this pregnancy")
+    cid = str(uuid.uuid4())
+    await connection.execute(
+        """INSERT INTO children (id, mother_id, pregnancy_id, name, birth_date, gender,
+            birth_weight_kg, birth_length_cm, delivery_type,
+            current_weight_kg, current_height_cm, blood_group, notes)
+           VALUES ($1::uuid, $2::uuid, $3::uuid, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)""",
+        cid, current_mother["id"], payload.pregnancy_id, payload.name, payload.birth_date,
+        payload.gender, payload.birth_weight_kg, payload.birth_length_cm, payload.delivery_type,
+        payload.current_weight_kg, payload.current_height_cm, payload.blood_group, payload.notes,
+    )
+    child = dict(await connection.fetchrow("SELECT * FROM children WHERE id = $1::uuid", cid))
+    preg = await connection.fetchrow("SELECT * FROM pregnancies WHERE id = $1::uuid", payload.pregnancy_id)
+    return {**child, "prenatal_environment": _prenatal_context(preg)}
+
+
+@app.get("/children")
+async def list_children(pregnancy_id: Optional[str] = None,
+                        current_mother=Depends(get_current_mother), connection=Depends(get_db)):
+    if pregnancy_id:
+        if not await _mother_owns_pregnancy(connection, current_mother["id"], pregnancy_id):
+            raise HTTPException(status_code=404, detail="Pregnancy not found")
+        rows = await connection.fetch(
+            "SELECT * FROM children WHERE mother_id = $1::uuid AND pregnancy_id = $2::uuid ORDER BY created_at DESC",
+            current_mother["id"], pregnancy_id,
+        )
+    else:
+        rows = await connection.fetch(
+            "SELECT * FROM children WHERE mother_id = $1::uuid ORDER BY created_at DESC",
+            current_mother["id"],
+        )
+    out = []
+    for r in rows:
+        preg = await connection.fetchrow(
+            "SELECT * FROM pregnancies WHERE id = $1::uuid", str(r["pregnancy_id"])
+        )
+        out.append({**dict(r), "prenatal_environment": _prenatal_context(preg) if preg else None})
+    return out
+
+
+@app.get("/children/{child_id}")
+async def get_child(child_id: str, current_mother=Depends(get_current_mother),
+                    connection=Depends(get_db)):
+    """Child card + inherited read-only Prenatal Environment Context."""
+    child = await connection.fetchrow(
+        "SELECT * FROM children WHERE id = $1::uuid AND mother_id = $2::uuid",
+        child_id, current_mother["id"],
+    )
+    if child is None:
+        raise HTTPException(status_code=404, detail="Child Health Card not found")
+    preg = await connection.fetchrow(
+        "SELECT * FROM pregnancies WHERE id = $1::uuid", str(child["pregnancy_id"])
+    )
+    return {**dict(child), "prenatal_environment": _prenatal_context(preg) if preg else None}
+
+
+@app.put("/children/{child_id}")
+async def update_child(child_id: str, payload: ChildUpdate,
+                       current_mother=Depends(get_current_mother), connection=Depends(get_db)):
+    """Update ongoing growth metrics. Prenatal context is never editable here — it stays inherited."""
+    if not await _mother_owns_child(connection, current_mother["id"], child_id):
+        raise HTTPException(status_code=404, detail="Child Health Card not found")
+    await connection.execute(
+        """UPDATE children SET name = COALESCE($1, name),
+            birth_date = COALESCE($2, birth_date), gender = COALESCE($3, gender),
+            birth_weight_kg = COALESCE($4, birth_weight_kg),
+            birth_length_cm = COALESCE($5, birth_length_cm),
+            delivery_type = COALESCE($6, delivery_type),
+            current_weight_kg = COALESCE($7, current_weight_kg),
+            current_height_cm = COALESCE($8, current_height_cm),
+            blood_group = COALESCE($9, blood_group), notes = COALESCE($10, notes),
+            updated_at = NOW() WHERE id = $11::uuid""",
+        payload.name, payload.birth_date, payload.gender, payload.birth_weight_kg,
+        payload.birth_length_cm, payload.delivery_type, payload.current_weight_kg,
+        payload.current_height_cm, payload.blood_group, payload.notes, child_id,
+    )
+    child = dict(await connection.fetchrow("SELECT * FROM children WHERE id = $1::uuid", child_id))
+    preg = await connection.fetchrow(
+        "SELECT * FROM pregnancies WHERE id = $1::uuid", str(child["pregnancy_id"])
+    )
+    return {**child, "prenatal_environment": _prenatal_context(preg) if preg else None}
+
+
+# ---------------------------------------------------------------------------
 # Run script
 # ---------------------------------------------------------------------------
 
