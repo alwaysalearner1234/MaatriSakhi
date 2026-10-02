@@ -68,6 +68,7 @@ This application is strictly grounded in the official medical guidelines of the 
 7. **One-Click Mother Demo Account** (Pregnancy + Child flows):
    - Email: `mother@maatri.sakhi` · Password: `mother123` (same convention as the doctor demo: `doctor@maatri.sakhi` / `doctor123`).
    - Pre-seeded with consent given + a week-38 pregnancy (high BP + gestational diabetes + doctor limits, visit in 7 days) so both trackers and the Child Health Card creation flow are immediately explorable. Works online (Postgres) and offline (local demo store).
+   - The doctor login screen has a matching one-click demo (`doctor@maatri.sakhi` / `doctor123`).
 
 ---
 

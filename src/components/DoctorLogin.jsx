@@ -1,18 +1,28 @@
 import React, { useState, useEffect } from "react";
-import { UI_TRANSLATIONS, LANGUAGES } from "../data/translations";
+import { UI_TRANSLATIONS } from "../data/translations";
 import { Stethoscope, Mail, Lock, Eye, EyeOff, LogIn, Sparkles } from "lucide-react";
 import "./DoctorLogin.css";
 
 // Backend address: set VITE_API_URL in .env.local (local) or in Render (live)
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
-export default function DoctorLogin({ lang, onSelectLanguage, onNavigate }) {
+// Demo doctor: doctor@maatri.sakhi / doctor123 (seeded by database_init.py).
+// Supports both prop styles: onNavigate(view) OR onLoginSuccess(info)/onBackToHome().
+const DEMO_DOCTOR = { email: "doctor@maatri.sakhi", password: "doctor123" };
+
+export default function DoctorLogin({ lang, onSelectLanguage, onNavigate, onLoginSuccess, onBackToHome }) {
   const t = UI_TRANSLATIONS[lang] || UI_TRANSLATIONS.en;
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+
+  // Route to the dashboard through whichever callback the parent provided.
+  const goDoctor = (info) => {
+    if (onNavigate) onNavigate("doctor");
+    else if (onLoginSuccess) onLoginSuccess(info || { email: email || DEMO_DOCTOR.email });
+  };
 
   // If a saved token is still valid, go straight to the dashboard
   useEffect(() => {
@@ -22,20 +32,16 @@ export default function DoctorLogin({ lang, onSelectLanguage, onNavigate }) {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((res) => {
-        if (res.ok) onNavigate("doctor");
+        if (res.ok) goDoctor();
         else localStorage.removeItem("doctor_token");
       })
       .catch(() => {
         /* backend offline: stay on the login screen */
       });
-  }, [onNavigate]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!email || !password) {
-      setError("Please enter your email and password.");
-      return;
-    }
+  const doLogin = async (loginEmail, loginPassword) => {
     setError("");
     setLoading(true);
 
@@ -44,7 +50,7 @@ export default function DoctorLogin({ lang, onSelectLanguage, onNavigate }) {
       response = await fetch(`${API_BASE}/api/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email: loginEmail, password: loginPassword }),
       });
     } catch {
       setError("Can't reach the server. Please make sure the backend is running.");
@@ -61,7 +67,7 @@ export default function DoctorLogin({ lang, onSelectLanguage, onNavigate }) {
 
     if (response.ok && data.access_token) {
       localStorage.setItem("doctor_token", data.access_token);
-      onNavigate("doctor");
+      goDoctor(data.doctor || { email: loginEmail });
     } else if (response.status === 401) {
       setError("Incorrect email or password.");
     } else {
@@ -74,10 +80,20 @@ export default function DoctorLogin({ lang, onSelectLanguage, onNavigate }) {
     setLoading(false);
   };
 
-  const fillDemoAccount = () => {
-    setEmail("doctor@maatri.sakhi");
-    setPassword("doctor123");
-    setError("");
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!email || !password) {
+      setError("Please enter your email and password.");
+      return;
+    }
+    doLogin(email, password);
+  };
+
+  // One-click demo login: fills AND submits (mirrors MotherAuth's demo button).
+  const demoLogin = () => {
+    setEmail(DEMO_DOCTOR.email);
+    setPassword(DEMO_DOCTOR.password);
+    doLogin(DEMO_DOCTOR.email, DEMO_DOCTOR.password);
   };
 
   return (
@@ -153,20 +169,37 @@ export default function DoctorLogin({ lang, onSelectLanguage, onNavigate }) {
           </button>
         </form>
 
-        <button type="button" className="dl-demo" onClick={fillDemoAccount}>
-          <Sparkles size={16} /> {t.useDemoAccount || "Use demo account"}
+        <button type="button" className="dl-demo" onClick={demoLogin} disabled={loading}>
+          <Sparkles size={16} /> {t.useDemoAccount || "Try demo account →"}
         </button>
-
-        <p className="dl-footer">
-          {t.dontHaveAccount || "Don't have an account?"}{" "}
-          <button
-            type="button"
-            className="dl-link"
-            onClick={() => onNavigate("signup")}
-          >
-            {t.signup || "Sign Up"}
-          </button>
+        <p className="dl-demo-creds">
+          Demo: <code>{DEMO_DOCTOR.email} / {DEMO_DOCTOR.password}</code>
         </p>
+
+        {(onNavigate || onBackToHome) && (
+          <p className="dl-footer">
+            {onNavigate ? (
+              <>
+                {t.dontHaveAccount || "Don't have an account?"}{" "}
+                <button
+                  type="button"
+                  className="dl-link"
+                  onClick={() => onNavigate("signup")}
+                >
+                  {t.signup || "Sign Up"}
+                </button>
+              </>
+            ) : (
+              <button
+                type="button"
+                className="dl-link"
+                onClick={onBackToHome}
+              >
+                ← Back to home
+              </button>
+            )}
+          </p>
+        )}
       </div>
     </div>
   );
