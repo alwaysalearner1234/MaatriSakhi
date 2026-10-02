@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Mail, Lock, User, LogIn, UserPlus, AlertCircle } from 'lucide-react';
-import { motherSignup, motherLogin } from '../../utils/motherApi';
+import { Mail, Lock, User, LogIn, UserPlus, AlertCircle, Play } from 'lucide-react';
+import { motherSignup, motherLogin, demoMotherLogin, DEMO_MOTHER } from '../../utils/motherApi';
 import './mother.css';
 
 // Simple, secure Mother signup/login. Passwords are hashed server-side (bcrypt);
@@ -12,6 +12,19 @@ export default function MotherAuth({ onAuthed, onBack }) {
   const [busy, setBusy] = useState(false);
 
   const set = (k, v) => setForm((p) => ({ ...p, [k]: v }));
+
+  const demoLogin = async () => {
+    setError('');
+    setBusy(true);
+    try {
+      const data = await demoMotherLogin();
+      onAuthed(data.mother);
+    } catch (err) {
+      setError(err.message || 'Demo login failed. Try again.');
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const submit = async (e) => {
     e.preventDefault();
@@ -69,6 +82,13 @@ export default function MotherAuth({ onAuthed, onBack }) {
             {busy ? 'Please wait…' : mode === 'signup' ? 'Sign up securely' : 'Login securely'}
           </button>
         </form>
+        <div className="demo-box">
+          <span>Just exploring? One click logs you in with the demo account:</span>
+          <code>{DEMO_MOTHER.email} / {DEMO_MOTHER.password}</code>
+          <button type="button" className="demo-btn" onClick={demoLogin} disabled={busy}>
+            <Play size={14} /> {busy ? 'Logging in…' : 'Try demo account →'}
+          </button>
+        </div>
         <p className="mother-note">Postgres-backed (Render / Supabase). Works offline in demo mode when no API is configured.</p>
       </div>
     </div>

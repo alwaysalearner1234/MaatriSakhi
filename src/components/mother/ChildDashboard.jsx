@@ -49,14 +49,15 @@ export default function ChildDashboard({ child, pregnancy, onChildUpdated, onBac
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
 
+  const birthDate = child?.birth_date;
   const ageText = useMemo(() => {
-    if (!child?.birth_date) return '—';
-    const days = Math.floor((Date.now() - new Date(child.birth_date).getTime()) / 86400000);
+    if (!birthDate) return '—';
+    const days = Math.floor((Date.now() - new Date(birthDate).getTime()) / 86400000);
     if (days < 0) return '—';
     if (days < 30) return `${days} day${days === 1 ? '' : 's'} old`;
     const m = Math.floor(days / 30.46);
     return m < 24 ? `${m} month${m === 1 ? '' : 's'} old` : `${Math.floor(m / 12)}y ${m % 12}m old`;
-  }, [child?.birth_date]);
+  }, [birthDate]);
 
   const save = async () => {
     setErr(''); setMsg(''); setBusy(true);

@@ -65,6 +65,9 @@ This application is strictly grounded in the official medical guidelines of the 
    - Print & PDF export layout optimized for hospital records.
 6. **One-Click Realistic Demo Patient**:
    - Instant simulation of a patient case (*Ananya Sharma*, 28, planning conception, mild hypothyroidism on levothyroxine, not yet taking folic acid, partner smoking) to test the entire end-to-end workflow in seconds.
+7. **One-Click Mother Demo Account** (Pregnancy + Child flows):
+   - Email: `mother@maatri.sakhi` · Password: `mother123` (same convention as the doctor demo: `doctor@maatri.sakhi` / `doctor123`).
+   - Pre-seeded with consent given + a week-38 pregnancy (high BP + gestational diabetes + doctor limits, visit in 7 days) so both trackers and the Child Health Card creation flow are immediately explorable. Works online (Postgres) and offline (local demo store).
 
 ---
 
