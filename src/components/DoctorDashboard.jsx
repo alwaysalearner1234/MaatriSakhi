@@ -4,6 +4,8 @@ import { generateClinicianFlags, QUESTIONS, SECTIONS_META } from '../data/fogsiQ
 import { formatAnswerValue } from '../utils/answerFormatter';
 import { calculateAssessmentAnalytics, generateAssessmentJson, downloadAssessmentJson } from '../utils/assessmentJsonGenerator';
 import AssessmentVisualisation from './AssessmentVisualisation';
+import AttachmentInput from './common/AttachmentInput';
+import { resolveAttachmentUrl } from '../utils/motherApi';
 import {
   Stethoscope,
   Printer,
@@ -98,6 +100,7 @@ export default function DoctorDashboard({
 
   // Doctor's consultation notes & signoff state
   const [doctorNotesText, setDoctorNotesText] = useState('');
+  const [newNoteAttachments, setNewNoteAttachments] = useState([]);
   const [newNoteInput, setNewNoteInput] = useState('');
   const [finalClassification, setFinalClassification] = useState(null); // 'routine' | 'review' | 'high_risk'
   const [checklistSigned, setChecklistSigned] = useState(false);
@@ -217,13 +220,15 @@ export default function DoctorDashboard({
     const newNote = {
       doctor: activeDoctor?.name || 'Dr. Anita Joshi, MD',
       date: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
-      text: newNoteInput.trim()
+      text: newNoteInput.trim(),
+      attachments: [...newNoteAttachments]
     };
     const updatedNotes = [newNote, ...(activePatient.notes || [])];
     if (onUpdatePatient) {
       onUpdatePatient({ ...activePatient, notes: updatedNotes });
     }
     setNewNoteInput('');
+    setNewNoteAttachments([]);
   };
 
   const handleCompleteConsultation = () => {
@@ -1351,6 +1356,20 @@ export default function DoctorDashboard({
                         <strong>{n.doctor}</strong> • <span>{n.date}</span>
                       </div>
                       <p className="doc-note-text">{n.text}</p>
+                      {(n.attachments || []).length > 0 && (
+                        <div className="attach-list">
+                          {(n.attachments || []).map((a, ai) => {
+                            const url = resolveAttachmentUrl(a);
+                            return url ? (
+                              <a key={ai} href={url} target="_blank" rel="noopener noreferrer" className="attach-view-link">
+                                📎 {a.name || 'attachment'}
+                              </a>
+                            ) : (
+                              <span key={ai} className="attach-view-link">📎 {a.name || 'attachment'}</span>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -1362,6 +1381,12 @@ export default function DoctorDashboard({
                   placeholder="Document specific consultation notes, prescription changes, ultrasound findings, or personalized guidance..."
                   value={newNoteInput}
                   onChange={(e) => setNewNoteInput(e.target.value)}
+                />
+                <AttachmentInput
+                  attachments={newNoteAttachments}
+                  onChange={setNewNoteAttachments}
+                  max={3}
+                  compact
                 />
                 <button
                   type="button"

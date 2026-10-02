@@ -1,7 +1,19 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { HeartPulse, Droplet, CalendarClock, Plus, AlertCircle, RotateCcw, Baby, PartyPopper } from 'lucide-react';
-import { trackerFlags, daysUntilVisit, createEntry, listEntries, saveConsent, shouldPromptChildCard } from '../../utils/motherApi';
+import { HeartPulse, Droplet, CalendarClock, Plus, AlertCircle, RotateCcw, Baby, PartyPopper, Paperclip } from 'lucide-react';
+import { trackerFlags, daysUntilVisit, createEntry, listEntries, saveConsent, shouldPromptChildCard, resolveAttachmentUrl } from '../../utils/motherApi';
+import AttachmentInput from '../common/AttachmentInput';
 import './mother.css';
+
+function entryFileLink(e) {
+  const ref = e.file_path ? { url: e.file_path } : e.localUrl ? { url: e.localUrl } : null;
+  const url = ref && resolveAttachmentUrl(ref);
+  if (!url) return null;
+  return (
+    <a href={url} target="_blank" rel="noopener noreferrer" className="attach-view-link" title="Open attached file">
+      <Paperclip size={12} /> file
+    </a>
+  );
+}
 
 // Conditional trackers:
 //  - BP tracker visible IFF has_high_bp OR doctor BP limit set
@@ -13,6 +25,8 @@ export default function PregnancyDashboard({ mother, pregnancy, onUpdateMother, 
   const [entries, setEntries] = useState([]);
   const [bp, setBp] = useState({ sys: '', dia: '', note: '' });
   const [sugar, setSugar] = useState({ value: '', kind: 'fasting', note: '' });
+  const [bpFiles, setBpFiles] = useState([]);
+  const [sugarFiles, setSugarFiles] = useState([]);
   const [msg, setMsg] = useState('');
   const [err, setErr] = useState('');
 
@@ -32,11 +46,14 @@ export default function PregnancyDashboard({ mother, pregnancy, onUpdateMother, 
     setErr(''); setMsg('');
     const sys = Number(bp.sys), dia = Number(bp.dia);
     if (!sys || !dia) return setErr('Enter both systolic and diastolic values.');
+    const file = bpFiles[0] || null;
     const row = await createEntry({
       pregnancy_id: pregnancy.id, type: 'bp',
       value_json: { systolic: sys, diastolic: dia }, note: bp.note || null,
+      file_path: file?.file_path || null,
     }).catch((e) => { setErr(e.message); return null; });
     if (row) {
+      if (file?.local) row.localUrl = file.url;
       if (row.offline || String(pregnancy.id).startsWith('preg-')) pushLocal(row);
       else setEntries(await listEntries(pregnancy.id).catch(() => entries));
       const over =
@@ -44,6 +61,7 @@ export default function PregnancyDashboard({ mother, pregnancy, onUpdateMother, 
         (pregnancy.bp_limit_diastolic && dia > pregnancy.bp_limit_diastolic);
       setMsg(over ? '⚠️ Above your doctor-set BP limit — please contact your doctor.' : 'BP saved ✓');
       setBp({ sys: '', dia: '', note: '' });
+      setBpFiles([]);
     }
   };
 
@@ -51,16 +69,20 @@ export default function PregnancyDashboard({ mother, pregnancy, onUpdateMother, 
     setErr(''); setMsg('');
     const v = Number(sugar.value);
     if (!v) return setErr('Enter your sugar value (mg/dL).');
+    const file = sugarFiles[0] || null;
     const row = await createEntry({
       pregnancy_id: pregnancy.id, type: 'sugar',
       value_json: { mg_dl: v, kind: sugar.kind }, note: sugar.note || null,
+      file_path: file?.file_path || null,
     }).catch((e) => { setErr(e.message); return null; });
     if (row) {
+      if (file?.local) row.localUrl = file.url;
       if (row.offline || String(pregnancy.id).startsWith('preg-')) pushLocal(row);
       else setEntries(await listEntries(pregnancy.id).catch(() => entries));
       const lim = sugar.kind === 'fasting' ? pregnancy.sugar_limit_fasting : pregnancy.sugar_limit_post_meal;
       setMsg(lim && v > lim ? '⚠️ Above your doctor-set sugar limit — please contact your doctor.' : 'Sugar saved ✓');
       setSugar({ value: '', kind: 'fasting', note: '' });
+      setSugarFiles([]);
     }
   };
 
@@ -121,9 +143,10 @@ export default function PregnancyDashboard({ mother, pregnancy, onUpdateMother, 
               <input placeholder="Note (optional)" value={bp.note} onChange={(e) => setBp({ ...bp, note: e.target.value })} />
               <button type="button" className="btn-primary-lg" onClick={addBp}><Plus size={15} /> Save BP</button>
             </div>
+            <AttachmentInput attachments={bpFiles} onChange={setBpFiles} max={1} compact />
             <ul className="tracker-list">
               {bpRows.map((e) => (
-                <li key={e.id}>{e.value_json?.systolic}/{e.value_json?.diastolic} mmHg — {new Date(e.created_at).toLocaleString()}{e.note ? ` — ${e.note}` : ''}</li>
+                <li key={e.id}>{e.value_json?.systolic}/{e.value_json?.diastolic} mmHg — {new Date(e.created_at).toLocaleString()}{e.note ? ` — ${e.note}` : ''} {entryFileLink(e)}</li>
               ))}
               {!bpRows.length && <li className="muted">No BP entries yet.</li>}
             </ul>
@@ -146,9 +169,10 @@ export default function PregnancyDashboard({ mother, pregnancy, onUpdateMother, 
               <input placeholder="Note (optional)" value={sugar.note} onChange={(e) => setSugar({ ...sugar, note: e.target.value })} />
               <button type="button" className="btn-primary-lg" onClick={addSugar}><Plus size={15} /> Save sugar</button>
             </div>
+            <AttachmentInput attachments={sugarFiles} onChange={setSugarFiles} max={1} compact />
             <ul className="tracker-list">
               {sugarRows.map((e) => (
-                <li key={e.id}>{e.value_json?.mg_dl} mg/dL ({e.value_json?.kind}) — {new Date(e.created_at).toLocaleString()}{e.note ? ` — ${e.note}` : ''}</li>
+                <li key={e.id}>{e.value_json?.mg_dl} mg/dL ({e.value_json?.kind}) — {new Date(e.created_at).toLocaleString()}{e.note ? ` — ${e.note}` : ''} {entryFileLink(e)}</li>
               ))}
               {!sugarRows.length && <li className="muted">No sugar entries yet.</li>}
             </ul>

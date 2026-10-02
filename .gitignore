@@ -28,4 +28,7 @@ __pycache__/
 *.pyc
 .env.local
 
+# Uploaded clinical attachments (served from ./uploads, ephemeral on Render)
+uploads/
+
 

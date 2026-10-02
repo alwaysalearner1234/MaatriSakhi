@@ -170,14 +170,66 @@ export async function myPregnancies() {
   }
 }
 
-// ---- Entries (tracker data -> Entry table) ----
-export async function createEntry({ pregnancy_id, type, value_json, note }) {
+// ---- File attachments (images + PDFs on any notes field) ----
+export const API_BASE_URL = API_BASE || 'http://localhost:8000';
+const MAX_ATTACH_BYTES = 10 * 1024 * 1024;
+
+function localAttachment(file) {
+  return {
+    name: file.name,
+    url: URL.createObjectURL(file),
+    kind: (file.type || '').startsWith('image/') ? 'image' : 'pdf',
+    size: file.size,
+    local: true,
+  };
+}
+
+export function attachmentKind(file) {
+  if ((file.type || '').startsWith('image/')) return 'image';
+  if ((file.type || '') === 'application/pdf' || /\.pdf$/i.test(file.name || '')) return 'pdf';
+  return null;
+}
+
+// Upload one file now; falls back to a session-local preview when the
+// backend is unreachable (offline demo) or no login token exists.
+export async function uploadAttachment(file) {
+  const kind = attachmentKind(file);
+  if (!kind) throw new Error('Only images (PNG/JPG) and PDF files are allowed.');
+  if (file.size > MAX_ATTACH_BYTES) throw new Error('File too large (max 10 MB).');
+  const token = getToken() || localStorage.getItem('doctor_token');
+  if (!token) return localAttachment(file);
   try {
-    return await request('/entries', { method: 'POST', body: { pregnancy_id, type, value_json, note } });
+    const fd = new FormData();
+    fd.append('file', file);
+    const res = await fetch(`${API_BASE_URL}/uploads`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: fd,
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.detail || 'Upload failed');
+    return { name: file.name, url: data.url, file_path: data.file_path, kind: data.kind, size: data.size };
+  } catch {
+    return localAttachment(file);
+  }
+}
+
+// Resolve an attachment ref to a clickable URL (server path, absolute, or blob).
+export function resolveAttachmentUrl(a) {
+  if (!a?.url && a?.file_path) return `${API_BASE_URL}/${String(a.file_path).replace(/^\//, '')}`;
+  if (!a?.url) return null;
+  if (/^(https?:|blob:)/.test(a.url)) return a.url;
+  return `${API_BASE_URL}${a.url.startsWith('/') ? '' : '/'}${a.url}`;
+}
+
+// ---- Entries (tracker data -> Entry table) ----
+export async function createEntry({ pregnancy_id, type, value_json, note, file_path }) {
+  try {
+    return await request('/entries', { method: 'POST', body: { pregnancy_id, type, value_json, note, file_path } });
   } catch (e) {
     if (e.message !== 'no-backend') throw e;
     const local = loadLocal();
-    const row = { id: `entry-${Date.now()}`, pregnancy_id, type, value_json, note, created_at: new Date().toISOString() };
+    const row = { id: `entry-${Date.now()}`, pregnancy_id, type, value_json, note, file_path: file_path || null, created_at: new Date().toISOString() };
     saveLocal({ entries: [row, ...(local.entries || [])] });
     return { ...row, offline: true };
   }

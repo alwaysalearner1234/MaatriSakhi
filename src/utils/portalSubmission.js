@@ -37,6 +37,8 @@ function buildQuestionMeta() {
  * @param {Array} params.history
  * @param {object} params.sectionNotes
  * @param {object} params.extra - { examination, assessment, plan }
+ * @param {object} params.sectionAttachments - { secId: [{ name, url, file_path }] }
+ * @param {object} params.extraAttachments - { examination|assessment|plan: [...] }
  */
 export function buildPortalSubmission({
   patient = {},
@@ -46,6 +48,8 @@ export function buildPortalSubmission({
   history = [],
   sectionNotes = {},
   extra = {},
+  sectionAttachments = {},
+  extraAttachments = {},
 } = {}) {
   const date = encounterDate || new Date().toISOString().slice(0, 10);
   return {
@@ -65,6 +69,8 @@ export function buildPortalSubmission({
       assessment: extra?.assessment || '',
       plan: extra?.plan || '',
     },
+    section_attachments: { ...(sectionAttachments || {}) },
+    extra_attachments: { ...(extraAttachments || {}) },
     question_meta: buildQuestionMeta(),
   };
 }

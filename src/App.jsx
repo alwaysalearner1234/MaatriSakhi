@@ -267,7 +267,7 @@ export default function App() {
   // Complete Assessment action (Bottom button and top button)
   // Portal Submit -> portal_submission.json (ONLY clinical source of truth).
   // Backend: python generator.py submit <file> -> source.json -> prepare -> build.
-  const handleCompleteAssessment = (customPatientDetails = null, extraNotes = {}) => {
+  const handleCompleteAssessment = (customPatientDetails = null, extraNotes = {}, attachments = {}) => {
     console.log('[SUBMIT] started');
     setSubmitError(null);
     try {
@@ -334,6 +334,8 @@ export default function App() {
         assessment: extraNotes?.assessment || '',
         plan: extraNotes?.plan || '',
       },
+      sectionAttachments: attachments?.section || {},
+      extraAttachments: attachments?.extra || {},
     });
     console.log('[SUBMIT] submission created', {
       answers: Object.keys(portalSubmission.answers || {}).length,
@@ -356,6 +358,8 @@ export default function App() {
       language: currentLangObj.name,
       answers: { ...answers },
       sectionNotes: { ...sectionNotes },
+      sectionAttachments: { ...(attachments?.section || {}) },
+      extraAttachments: { ...(attachments?.extra || {}) },
       history: [...history],
       analytics: assessmentJson.analytics,
       jsonPayload: assessmentJson,

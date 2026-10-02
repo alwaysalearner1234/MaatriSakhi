@@ -84,6 +84,30 @@ def test_schema_tests_only():
     pass  # Already tested above
 
 
+def test_portal_attachments_to_source():
+    """portal_to_source should reference attached files without inventing data. No DB needed."""
+    from generator import portal_to_source
+    portal = {
+        "patient": {"name": "Test", "record_id": "T1"},
+        "encounter": {"date": "2026-10-01"},
+        "answers": {},
+        "history": [],
+        "section_notes": {"medical": "TSH note."},
+        "section_attachments": {
+            "medical": [{"name": "scan.jpg", "url": "/uploads/abc.jpg"}],
+        },
+        "extra": {"examination": "", "assessment": "", "plan": ""},
+        "extra_attachments": {
+            "plan": [{"name": "diet.pdf", "url": "/uploads/diet.pdf"}],
+        },
+    }
+    source = portal_to_source(portal)
+    medical = source["sections"]["Medical and Surgical History"]
+    assert any("scan.jpg" in e and "/uploads/abc.jpg" in e for e in medical), medical
+    plan = source["sections"]["Documented Plan and Follow-up"]
+    assert any("diet.pdf" in e for e in plan), plan
+
+
 # The following tests require a database connection and would need
 # TEST_DATABASE_URL pointing to a running Postgres instance.
 # They are documented here for reference; to run them, start Postgres

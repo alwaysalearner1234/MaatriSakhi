@@ -1,6 +1,7 @@
-import React, { useMemo, useState } from 'react';
-import { Baby, TrendingUp, ShieldAlert, Save, AlertCircle, ArrowLeft } from 'lucide-react';
-import { updateChild } from '../../utils/motherApi';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Baby, TrendingUp, ShieldAlert, Save, AlertCircle, ArrowLeft, FolderOpen, Paperclip, Plus } from 'lucide-react';
+import { updateChild, createEntry, listEntries, resolveAttachmentUrl } from '../../utils/motherApi';
+import AttachmentInput from '../common/AttachmentInput';
 import './mother.css';
 
 // Child dashboard:
@@ -34,6 +35,79 @@ export function PrenatalHistory({ env }) {
           )}
         </div>
       </div>
+    </section>
+  );
+}
+
+// Health files attached to the child's notes: stored as Entry type='report'
+// on the linked pregnancy (tagged with the child id), so they travel with
+// the prenatal context. Images (scans, photos) and PDFs (discharge summaries).
+export function ChildHealthFiles({ child, pregnancy }) {
+  const [files, setFiles] = useState([]);
+  const [staged, setStaged] = useState([]);
+  const [note, setNote] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState('');
+
+  const reload = async () => {
+    try {
+      const all = await listEntries(pregnancy.id, 'report');
+      setFiles(all.filter((e) => e.value_json?.for === 'child' && String(e.value_json?.child_id) === String(child.id)));
+    } catch { /* offline empty state below */ }
+  };
+
+  useEffect(() => { reload(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [pregnancy?.id, child?.id]);
+
+  const saveFiles = async () => {
+    if (!staged.length) return;
+    setErr(''); setBusy(true);
+    try {
+      for (const att of staged) {
+        const row = await createEntry({
+          pregnancy_id: pregnancy.id,
+          type: 'report',
+          value_json: { for: 'child', child_id: child.id, filename: att.name },
+          note: note || null,
+          file_path: att.file_path || null,
+        });
+        if (att.local) row.localUrl = att.url;
+        setFiles((p) => [row, ...p]);
+      }
+      setStaged([]);
+      setNote('');
+    } catch (e) {
+      setErr(e.message || 'Could not save files.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <section className="tracker">
+      <h3><FolderOpen size={18} /> Health files <em>reports, scans, photos</em></h3>
+      <AttachmentInput attachments={staged} onChange={setStaged} max={3} />
+      <div className="tracker-form" style={{ marginTop: '.5rem' }}>
+        <input placeholder="File note (e.g. discharge summary)" value={note}
+          onChange={(e) => setNote(e.target.value)} style={{ gridColumn: '1 / -1' }} />
+        <button type="button" className="btn-primary-lg" onClick={saveFiles}
+          disabled={busy || !staged.length} style={{ gridColumn: '1 / -1', justifyContent: 'center' }}>
+          <Plus size={15} /> {busy ? 'Saving…' : `Save ${staged.length} file${staged.length === 1 ? '' : 's'} to health files`}
+        </button>
+      </div>
+      {err && <div className="mother-error"><AlertCircle size={15} /> {err}</div>}
+      <ul className="tracker-list">
+        {files.map((e) => {
+          const url = e.file_path ? resolveAttachmentUrl({ url: e.file_path }) : e.localUrl || null;
+          return (
+            <li key={e.id}>
+              {e.value_json?.filename || 'file'} — {new Date(e.created_at).toLocaleString()}
+              {e.note ? ` — ${e.note}` : ''}
+              {url && <> <a href={url} target="_blank" rel="noopener noreferrer" className="attach-view-link"><Paperclip size={12} /> open</a></>}
+            </li>
+          );
+        })}
+        {!files.length && <li className="muted">No health files yet — attach a photo or PDF above.</li>}
+      </ul>
     </section>
   );
 }
@@ -110,6 +184,8 @@ export default function ChildDashboard({ child, pregnancy, onChildUpdated, onBac
           {msg && <div className="mother-ok">{msg}</div>}
           {err && <div className="mother-error"><AlertCircle size={15} /> {err}</div>}
         </section>
+
+        <ChildHealthFiles child={child} pregnancy={pregnancy} />
 
         <button type="button" className="mother-link" onClick={onGoPregnancy}>
           View linked pregnancy profile →

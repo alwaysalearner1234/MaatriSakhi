@@ -462,6 +462,48 @@ def portal_to_source(portal):
     if plan:
         append("Documented Plan and Follow-up", f"Clinician documented plan: {plan}")
 
+    # --- attachments (images/PDFs on any notes field) ---
+    # Recorded as references ("Attachment: <name> (<url>)") so the narrative
+    # mentions the file without embedding binary data. Only attached files
+    # are listed; nothing is inferred.
+    def _attachment_ref(item):
+        if isinstance(item, dict):
+            name = str(item.get("name") or "attachment").strip()
+            url = str(item.get("url") or item.get("file_path") or "").strip()
+        else:
+            name, url = str(item).strip(), ""
+        if not name:
+            return None
+        return f"Attachment: {name}" + (f" ({url})" if url else "")
+
+    raw_section_atts = portal.get("section_attachments", {}) or {}
+    if isinstance(raw_section_atts, dict):
+        for fsec, items in raw_section_atts.items():
+            if not isinstance(items, list):
+                items = [items]
+            title = PORTAL_SECTION_TITLES.get(str(fsec), str(fsec))
+            target = PORTAL_SECTION_MAP.get(str(fsec), "Lifestyle and General Health")
+            for item in items:
+                ref = _attachment_ref(item)
+                if ref:
+                    append(target, f"Clinician file [{title}]: {ref}")
+
+    extra_atts = portal.get("extra_attachments", {}) or {}
+    extra_att_targets = {
+        "examination": "Examination and Investigations",
+        "assessment": "Assessment",
+        "plan": "Documented Plan and Follow-up",
+    }
+    if isinstance(extra_atts, dict):
+        for key, target in extra_att_targets.items():
+            items = extra_atts.get(key) or []
+            if not isinstance(items, list):
+                items = [items]
+            for item in items:
+                ref = _attachment_ref(item)
+                if ref:
+                    append(target, f"Clinician file: {ref}")
+
     return {
         "patient": {"name": name, "record_id": record_id},
         "encounter": {"date": date},

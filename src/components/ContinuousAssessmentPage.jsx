@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { SECTIONS_META, QUESTIONS, generateClinicianFlags } from '../data/fogsiQuestions';
 import { UI_TRANSLATIONS, LANGUAGES } from '../data/translations';
 import { formatAnswerValue } from '../utils/answerFormatter';
+import AttachmentInput from './common/AttachmentInput';
 import {
   Check,
   X,
@@ -72,6 +73,12 @@ export default function ContinuousAssessmentPage({
     plan: ''
   });
 
+  // Image/PDF attachments per notes field. Section keys = section ids;
+  // extra keys = examination/assessment/plan. Carried into the portal
+  // submission on SUBMIT (attachments are session-scoped, drafts keep text only).
+  const [sectionAttachments, setSectionAttachments] = useState({});
+  const [extraAttachments, setExtraAttachments] = useState({ examination: [], assessment: [], plan: [] });
+
   const handleExtraNoteChange = (key, value) => {
     setExtraNotes(prev => ({ ...prev, [key]: value }));
   };
@@ -79,7 +86,11 @@ export default function ContinuousAssessmentPage({
   const handleSubmitWithExtras = () => {
     console.log('[SUBMIT] button clicked');
     try {
-      if (onCompleteAssessment) onCompleteAssessment(patientDetails, { ...extraNotes });
+      if (onCompleteAssessment) onCompleteAssessment(
+        patientDetails,
+        { ...extraNotes },
+        { section: sectionAttachments, extra: extraAttachments }
+      );
     } catch (err) {
       // App-level handler also catches; this is a safety net so the
       // error is never swallowed by the event dispatch.
@@ -647,6 +658,12 @@ export default function ContinuousAssessmentPage({
                   value={sectionNotes[sec.id] || ''}
                   onChange={(e) => onSectionNoteChange(sec.id, e.target.value)}
                 />
+                <AttachmentInput
+                  attachments={sectionAttachments[sec.id] || []}
+                  onChange={(list) => setSectionAttachments((p) => ({ ...p, [sec.id]: list }))}
+                  max={3}
+                  compact
+                />
               </div>
             </section>
           );
@@ -685,6 +702,12 @@ export default function ContinuousAssessmentPage({
               value={extraNotes.examination}
               onChange={(e) => handleExtraNoteChange('examination', e.target.value)}
             />
+            <AttachmentInput
+              attachments={extraAttachments.examination || []}
+              onChange={(list) => setExtraAttachments((p) => ({ ...p, examination: list }))}
+              max={3}
+              compact
+            />
           </div>
 
           <div className="section-notes-dock">
@@ -702,6 +725,12 @@ export default function ContinuousAssessmentPage({
               value={extraNotes.assessment}
               onChange={(e) => handleExtraNoteChange('assessment', e.target.value)}
             />
+            <AttachmentInput
+              attachments={extraAttachments.assessment || []}
+              onChange={(list) => setExtraAttachments((p) => ({ ...p, assessment: list }))}
+              max={3}
+              compact
+            />
           </div>
 
           <div className="section-notes-dock">
@@ -718,6 +747,12 @@ export default function ContinuousAssessmentPage({
               placeholder="Clinician's documented plan and follow-up..."
               value={extraNotes.plan}
               onChange={(e) => handleExtraNoteChange('plan', e.target.value)}
+            />
+            <AttachmentInput
+              attachments={extraAttachments.plan || []}
+              onChange={(list) => setExtraAttachments((p) => ({ ...p, plan: list }))}
+              max={3}
+              compact
             />
           </div>
         </section>

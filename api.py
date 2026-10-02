@@ -22,9 +22,11 @@ import uuid
 from datetime import datetime, timezone, timedelta
 from typing import Optional
 
-from fastapi import FastAPI, HTTPException, Depends, status, BackgroundTasks
+from fastapi import FastAPI, HTTPException, Depends, status, BackgroundTasks, UploadFile, File
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from pathlib import Path
 from pydantic import BaseModel, Field, EmailStr
 import asyncpg
 from jsonschema import validate, Draft202012Validator, ValidationError
@@ -257,6 +259,23 @@ app.add_middleware(
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
+# ---------------------------------------------------------------------------
+# File uploads (images + PDFs attached to any notes field)
+# Files land in ./uploads and are served back at /uploads/<name>.
+# NOTE: Render's disk is ephemeral — uploads survive redeploys only with a
+# persistent disk. For a permanent store, swap _save_upload for S3/Supabase
+# Storage later; the API shape (file_path + url) stays the same.
+# ---------------------------------------------------------------------------
+
+BASE_DIR = Path(__file__).resolve().parent
+UPLOAD_DIR = BASE_DIR / "uploads"
+UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+
+ALLOWED_UPLOAD_EXTS = {".png", ".jpg", ".jpeg", ".webp", ".pdf"}
+MAX_UPLOAD_BYTES = 10 * 1024 * 1024  # 10 MB
+
+app.mount("/uploads", StaticFiles(directory=str(UPLOAD_DIR)), name="uploads")
+
 
 # ---------------------------------------------------------------------------
 # Database dependency
@@ -360,6 +379,64 @@ async def get_current_doctor(
         raise HTTPException(status_code=401, detail="Doctor not found")
     
     return {"id": str(row["id"]), "email": row["email"], "name": row["name"]}
+
+
+async def get_current_user(token: str = Depends(oauth2_scheme), connection=Depends(get_db)):
+    """Either role: Mother JWT (role=mother) or Doctor JWT. Used by /uploads so
+    attachments work from every notes field in the app."""
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+        sub: str = payload.get("sub")
+        if not sub:
+            raise HTTPException(status_code=401, detail="Invalid authentication credentials")
+    except jwt.PyJWTError:
+        raise HTTPException(status_code=401, detail="Invalid authentication credentials")
+
+    if payload.get("role") == "mother":
+        row = await connection.fetchrow(
+            "SELECT id, name, email FROM mothers WHERE id = $1::uuid", sub
+        )
+        if row is None:
+            raise HTTPException(status_code=401, detail="Mother not found")
+        return {"role": "mother", "id": str(row["id"]), "email": row["email"], "name": row["name"]}
+
+    row = await connection.fetchrow(
+        "SELECT id, email, name FROM doctors WHERE id = $1::uuid", sub
+    )
+    if row is None:
+        raise HTTPException(status_code=401, detail="Doctor not found")
+    return {"role": "doctor", "id": str(row["id"]), "email": row["email"], "name": row["name"]}
+
+
+@app.post("/uploads")
+async def upload_attachment(
+    file: UploadFile = File(...),
+    current_user=Depends(get_current_user),
+):
+    """Attach an image or PDF to any notes field. Returns file_path + url.
+    Requires Mother or Doctor login. Max 10 MB; images + PDF only."""
+    ext = Path(file.filename or "").suffix.lower()
+    if ext not in ALLOWED_UPLOAD_EXTS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Only images (png/jpg/webp) and PDF are allowed, got '{ext or '?'}'.",
+        )
+    content = await file.read()
+    if len(content) > MAX_UPLOAD_BYTES:
+        raise HTTPException(status_code=400, detail="File too large (max 10 MB).")
+    if not content:
+        raise HTTPException(status_code=400, detail="Empty file.")
+
+    stored_name = f"{uuid.uuid4().hex}{ext}"
+    (UPLOAD_DIR / stored_name).write_bytes(content)
+    kind = "pdf" if ext == ".pdf" else "image"
+    return {
+        "file_path": f"uploads/{stored_name}",
+        "url": f"/uploads/{stored_name}",
+        "name": file.filename,
+        "kind": kind,
+        "size": len(content),
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -644,6 +721,7 @@ class EntryCreate(BaseModel):
     type: str = Field(..., pattern="^(bp|sugar|symptom|report)$")
     value_json: dict = Field(...)
     note: Optional[str] = Field(default=None)
+    file_path: Optional[str] = Field(default=None, description="uploads/<name> from POST /uploads")
 
 
 class VisitCreate(BaseModel):
@@ -811,8 +889,9 @@ async def create_entry(payload: EntryCreate, current_mother=Depends(get_current_
         raise HTTPException(status_code=404, detail="Pregnancy not found")
     eid = str(uuid.uuid4())
     await connection.execute(
-        "INSERT INTO entries (id, pregnancy_id, type, value_json, note) VALUES ($1::uuid, $2::uuid, $3, $4, $5)",
+        "INSERT INTO entries (id, pregnancy_id, type, value_json, note, file_path) VALUES ($1::uuid, $2::uuid, $3, $4, $5, $6)",
         eid, payload.pregnancy_id, payload.type, json.dumps(payload.value_json), payload.note,
+        payload.file_path,
     )
     return dict(await connection.fetchrow("SELECT * FROM entries WHERE id = $1::uuid", eid))
 

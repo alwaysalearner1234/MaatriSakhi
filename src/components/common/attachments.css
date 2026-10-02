@@ -1,0 +1,30 @@
+/* Shared attachment (image/PDF) styles — used by every notes field */
+.attach-wrap { margin-top: 0.55rem; }
+.attach-pick-btn {
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  padding: 0.42rem 0.8rem; border-radius: 9px; cursor: pointer;
+  border: 1.5px dashed #cbd5e1; background: #f8fafc;
+  color: #475569; font-size: 0.83rem; font-weight: 600;
+}
+.attach-pick-btn:hover:not(:disabled) { border-color: var(--primary-600, #e11d48); color: var(--primary-600, #e11d48); }
+.attach-pick-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+.attach-list { display: flex; flex-wrap: wrap; gap: 0.55rem; margin-top: 0.55rem; }
+.attach-item {
+  position: relative; display: flex; align-items: center; gap: 0.35rem;
+  border: 1px solid #e2e8f0; border-radius: 10px; padding: 0.3rem 0.4rem;
+  background: #fff; max-width: 220px;
+}
+.attach-thumb { width: 56px; height: 56px; object-fit: cover; border-radius: 7px; display: block; }
+.attach-filelink { display: inline-flex; align-items: center; gap: 0.35rem; color: #334155;
+  font-size: 0.8rem; font-weight: 600; text-decoration: none; overflow: hidden; }
+.attach-filelink span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 150px; }
+.attach-filelink:hover { color: var(--primary-600, #e11d48); }
+.attach-local-tag { font-size: 0.68rem; background: #fef3c7; color: #92400e; border-radius: 20px; padding: 0 0.45rem; }
+.attach-remove {
+  border: none; background: #fee2e2; color: #b91c1c; border-radius: 50%;
+  width: 20px; height: 20px; display: inline-flex; align-items: center; justify-content: center;
+  cursor: pointer; flex-shrink: 0;
+}
+.attach-error { display: flex; gap: 0.3rem; align-items: center; color: #991b1b; font-size: 0.8rem; margin-top: 0.35rem; }
+.attach-view-link { display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.83rem;
+  color: var(--primary-600, #e11d48); font-weight: 600; }
