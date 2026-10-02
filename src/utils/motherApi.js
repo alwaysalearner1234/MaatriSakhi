@@ -71,6 +71,64 @@ export function motherLogout() {
   setToken(null);
 }
 
+// ---- Demo account (mirrors database_init.py seed) ----
+// Email: mother@maatri.sakhi   Password: mother123
+export const DEMO_MOTHER = { email: 'mother@maatri.sakhi', password: 'mother123', name: 'Demo Mother' };
+
+function demoPregnancyPayload() {
+  const d = new Date();
+  d.setDate(d.getDate() + 7);
+  return {
+    current_week: 38,
+    next_visit_date: d.toISOString().slice(0, 10),
+    has_high_bp: true,
+    has_gestational_diabetes: true,
+    bp_limit_systolic: 140,
+    bp_limit_diastolic: 90,
+    sugar_limit_fasting: 95,
+    sugar_limit_post_meal: 140,
+  };
+}
+
+export async function demoMotherLogin() {
+  const { email, password, name } = DEMO_MOTHER;
+  try {
+    // Online: log in (self-heals by signing up + seeding pregnancy if demo missing)
+    let data;
+    try {
+      data = await request('/mothers/login', { method: 'POST', body: { email, password } });
+    } catch (loginErr) {
+      data = await request('/mothers/signup', { method: 'POST', body: { name, email, password, language: 'en' } });
+      await request('/mothers/consent', { method: 'POST', body: { consent_given: true } }).catch(() => {});
+      data.mother = { ...data.mother, consent_given: true };
+    }
+    setToken(data.access_token);
+    saveLocal({ mother: data.mother });
+    try {
+      let pregs = await request('/pregnancies/my');
+      if (!pregs.length) {
+        const created = await request('/pregnancies', { method: 'POST', body: demoPregnancyPayload() });
+        pregs = [created];
+      }
+      saveLocal({ pregnancies: pregs, activePregnancy: pregs[0] });
+    } catch { /* dashboard loads without pre-cached pregnancy */ }
+    return data;
+  } catch (e) {
+    if (e.message !== 'no-backend') throw e;
+    // Offline: seed the same demo data into localStorage (stable ids, no duplicates)
+    const local = loadLocal();
+    let mother = local.mother?.email === email
+      ? { ...local.mother, consent_given: true, consent_at: local.mother.consent_at || new Date().toISOString() }
+      : { id: 'demo-mother-1', name, email, language: 'en', consent_given: true, consent_at: new Date().toISOString() };
+    let pregnancies = local.pregnancies || [];
+    if (!pregnancies.some((p) => p.id === 'preg-demo-1')) {
+      pregnancies = [{ id: 'preg-demo-1', mother_id: mother.id, ...demoPregnancyPayload() }, ...pregnancies];
+    }
+    saveLocal({ mother, _pw: btoa(password), pregnancies, activePregnancy: pregnancies[0], entries: local.entries || [], children: local.children || [] });
+    return { mother, offline: true };
+  }
+}
+
 export const getLocalMother = () => loadLocal().mother || null;
 
 // ---- Consent: consent_given (bool) + consent_at (timestamp) ----

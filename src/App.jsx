@@ -15,7 +15,7 @@ import PregnancySetupFlow from './components/mother/PregnancySetupFlow';
 import PregnancyDashboard from './components/mother/PregnancyDashboard';
 import ChildSetupFlow from './components/mother/ChildSetupFlow';
 import ChildDashboard from './components/mother/ChildDashboard';
-import { getLocalMother, motherLogout, listChildren } from './utils/motherApi';
+import { getLocalMother, motherLogout, listChildren, myPregnancies } from './utils/motherApi';
 import DoctorLogin from './components/DoctorLogin';
 import AddPatientModal from './components/AddPatientModal';
 import PatientProfileView from './components/PatientProfileView';
@@ -459,8 +459,18 @@ export default function App() {
   };
 
   // Mother handlers (new flow only — planning flow below is unchanged)
-  const handleMotherAuthed = (m) => {
+  const handleMotherAuthed = async (m) => {
     setMother(m);
+    // Returning mother (e.g. demo account): restore her latest pregnancy + child
+    // so "I'm pregnant" lands on the dashboard, not a blank setup form.
+    if (m?.consent_given) {
+      try {
+        const pregs = await myPregnancies();
+        const latest = pregs?.[0] || null;
+        setPregnancy(latest);
+        await refreshChildFor(latest);
+      } catch { /* offline/empty — setup flow will create it */ }
+    }
     setCurrentView(m?.consent_given ? 'mode_switch' : 'mother_consent');
   };
   const handleMotherConsented = (m) => {

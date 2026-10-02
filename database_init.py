@@ -360,11 +360,37 @@ async def initialize_database():
                         hashed_pw,
                     )
 
+                # Seed a demo mother (login: mother@maatri.sakhi / mother123).
+                # Consent pre-given so the demo lands on the mode switch;
+                # sample week-38 pregnancy (high BP + GDM + doctor limits, visit in 7 days)
+                # showcases trackers + Child Health Card creation. No child seeded —
+                # creating the card IS the demo's next step.
+                demo_mother = await connection.fetchrow(
+                    "SELECT id FROM mothers WHERE email = $1", "mother@maatri.sakhi"
+                )
+                if demo_mother is None:
+                    demo_hash = bcrypt.hashpw("mother123".encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+                    demo_mother_id = await connection.fetchval(
+                        """INSERT INTO mothers (name, email, password_hash, language, consent_given, consent_at)
+                           VALUES ($1, $2, $3, 'en', TRUE, NOW()) RETURNING id""",
+                        "Demo Mother",
+                        "mother@maatri.sakhi",
+                        demo_hash,
+                    )
+                    await connection.execute(
+                        """INSERT INTO pregnancies
+                           (mother_id, current_week, next_visit_date, has_high_bp,
+                            has_gestational_diabetes, bp_limit_systolic, bp_limit_diastolic,
+                            sugar_limit_fasting, sugar_limit_post_meal)
+                           VALUES ($1::uuid, 38, CURRENT_DATE + 7, TRUE, TRUE, 140, 90, 95, 140)""",
+                        str(demo_mother_id),
+                    )
+
     # Close pool in finally to avoid Windows "Event loop is closed" SSL errors
     finally:
         await pool.close()
 
-    print("✅ Database initialized successfully")
+    print("Database initialized successfully")
 
 
 # ---------------------------------------------------------------------------
