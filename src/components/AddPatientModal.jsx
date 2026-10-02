@@ -13,7 +13,8 @@ export default function AddPatientModal({ isOpen, onClose, onSavePatient, onSave
     yearsMarried: '',
     previousMarriage: 'no',
     partnerName: '',
-    doctorDescription: ''
+    doctorDescription: '',
+    consentGiven: false
   });
 
   const [errors, setErrors] = useState({});
@@ -304,6 +305,28 @@ export default function AddPatientModal({ isOpen, onClose, onSavePatient, onSave
             <span>Save & Start Assessment</span>
             <ArrowRight size={16} />
           </button>
+        </div>
+
+        {/* Patient Consent - stored with patient record, visible only to the creating doctor */}
+        <div style={{
+          marginTop: '1rem',
+          padding: '0.75rem',
+          background: 'var(--surface-card)',
+          borderRadius: 'var(--radius-md)',
+          border: '1px solid var(--border-subtle)'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <Shield size={14} color="#e11d48" />
+            <span style={{ fontSize: '0.85rem', color: 'var(--text-main)' }}>
+              Patient consent: <input
+                type="checkbox"
+                ref={consentRef => { consentGiven = consentRef?.checked; }}
+                checked={consentGiven}
+                onChange={(e) => setFormData({ ...formData, consentGiven: e.target.checked })}
+                required
+              /> Saved with patient record; doctor-only view.
+            </span>
+          </div>
         </div>
       </div>
     </div>

@@ -1,0 +1,220 @@
+/* Doctor login screen - MaatriSakhi colours (deep green + rose) */
+.dl-page {
+  min-height: calc(100vh - 90px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+  background: linear-gradient(160deg, #fdf2f4 0%, #f3f8f6 100%);
+}
+
+.dl-card {
+  width: 100%;
+  max-width: 420px;
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 2.25rem 2rem 1.75rem;
+  box-shadow: 0 12px 40px rgba(31, 77, 61, 0.12);
+  border: 1px solid #f1e4e7;
+}
+
+.dl-header {
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.dl-badge {
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 0.9rem;
+  border-radius: 50%;
+  background: #fde8ec;
+  color: #c9566b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dl-title {
+  margin: 0;
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: #1f4d3d;
+}
+
+.dl-subtitle {
+  margin: 0.35rem 0 0;
+  font-size: 0.95rem;
+  color: #6b7280;
+}
+
+.dl-error {
+  background: #fef2f2;
+  color: #b42318;
+  border: 1px solid #fecaca;
+  border-radius: 12px;
+  padding: 0.7rem 0.9rem;
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+}
+
+.dl-form {
+  display: flex;
+  flex-direction: column;
+}
+
+.dl-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0.4rem 0 0.4rem;
+}
+
+.dl-input-wrap {
+  position: relative;
+  margin-bottom: 0.9rem;
+}
+
+.dl-input-icon {
+  position: absolute;
+  left: 0.9rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #9ca3af;
+  pointer-events: none;
+}
+
+.dl-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.8rem 0.9rem 0.8rem 2.6rem;
+  font-size: 0.95rem;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 12px;
+  background: #fafafa;
+  color: #111827;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+}
+
+.dl-input-pw {
+  padding-right: 2.8rem;
+}
+
+.dl-input:focus {
+  border-color: #1f4d3d;
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(31, 77, 61, 0.12);
+}
+
+.dl-eye {
+  position: absolute;
+  right: 0.6rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  padding: 0.3rem;
+  color: #6b7280;
+  cursor: pointer;
+  display: flex;
+}
+
+.dl-submit {
+  margin-top: 0.6rem;
+  width: 100%;
+  padding: 0.85rem 1rem;
+  border: none;
+  border-radius: 12px;
+  background: #1f4d3d;
+  color: #ffffff;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: background 0.2s, transform 0.1s;
+}
+
+.dl-submit:hover:not(:disabled) {
+  background: #173b2f;
+}
+
+.dl-submit:active:not(:disabled) {
+  transform: scale(0.99);
+}
+
+.dl-submit:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.dl-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: dl-spin 0.8s linear infinite;
+}
+
+@keyframes dl-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.dl-demo {
+  margin-top: 0.75rem;
+  width: 100%;
+  padding: 0.7rem 1rem;
+  border-radius: 12px;
+  border: 1.5px dashed #d9707a;
+  background: #fff7f8;
+  color: #c9566b;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  transition: background 0.2s;
+}
+
+.dl-demo:hover {
+  background: #fdecef;
+}
+
+.dl-footer {
+  margin: 1.25rem 0 0;
+  text-align: center;
+  font-size: 0.9rem;
+  color: #6b7280;
+}
+
+.dl-link {
+  background: none;
+  border: none;
+  padding: 0;
+  color: #c9566b;
+  font-weight: 700;
+  cursor: pointer;
+  font-size: inherit;
+}
+
+.dl-link:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 480px) {
+  .dl-card {
+    padding: 1.75rem 1.25rem 1.5rem;
+    border-radius: 16px;
+  }
+  .dl-title {
+    font-size: 1.4rem;
+  }
+}

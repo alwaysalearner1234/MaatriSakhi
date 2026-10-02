@@ -1,0 +1,73 @@
+/* MaatriSakhi Mother flow — scoped styles, reuses global --primary/--radius vars */
+.mother-wrap { display: flex; justify-content: center; padding: 2rem 1rem; }
+.mother-card { width: 100%; max-width: 620px; background: #fff; border: 1px solid var(--border-subtle, #e2e8f0);
+  border-radius: var(--radius-lg, 16px); padding: 1.75rem; box-shadow: 0 8px 30px rgba(190,18,60,.08); }
+.mother-card.wide { max-width: 760px; }
+.mother-title { font-size: 1.4rem; margin: .25rem 0 .5rem; color: var(--text-main, #1e293b); }
+.mother-sub { color: var(--text-muted, #64748b); margin-bottom: 1rem; }
+.mother-hello { font-weight: 700; margin-bottom: 1rem; }
+.mother-form { display: grid; gap: .85rem; margin-top: 1rem; }
+.mother-field { display: grid; gap: .35rem; font-size: .9rem; font-weight: 600; }
+.mother-field input, .mother-textinput, .tracker-form input, .tracker-form select {
+  padding: .65rem .8rem; border: 1.5px solid #cbd5e1; border-radius: 10px; font-size: .95rem; background: #fff; }
+.mother-tabs { display: flex; gap: .5rem; margin: 1rem 0; }
+.mother-tab { flex: 1; display: inline-flex; gap: .4rem; align-items: center; justify-content: center;
+  padding: .6rem; border-radius: 10px; border: 1.5px solid #e2e8f0; background: #f8fafc; cursor: pointer; font-weight: 700; }
+.mother-tab.active { border-color: var(--primary-600, #e11d48); background: #fff1f2; }
+.mother-link { background: none; border: none; color: var(--primary-600, #e11d48); font-weight: 700; cursor: pointer; padding: 0; }
+.mother-link.danger { color: #b91c1c; margin-top: 1rem; }
+.mother-error { display: flex; gap: .4rem; align-items: center; background: #fef2f2; border: 1px solid #fecaca;
+  color: #991b1b; padding: .6rem .8rem; border-radius: 10px; font-size: .88rem; }
+.mother-ok { background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; padding: .6rem .8rem; border-radius: 10px; margin-top: .8rem; }
+.mother-note { color: #94a3b8; font-size: .8rem; margin-top: .8rem; }
+.consent-badge { display: inline-flex; gap: .4rem; align-items: center; background: #ecfdf5; color: #065f46;
+  border: 1px solid #a7f3d0; padding: .35rem .7rem; border-radius: 999px; font-weight: 700; font-size: .82rem; }
+.consent-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1rem 1.1rem; margin: 1rem 0; }
+.consent-box h3 { margin: .6rem 0 .3rem; font-size: .95rem; }
+.consent-box ul { margin: .2rem 0 .6rem 1.1rem; color: #334155; font-size: .9rem; }
+.consent-check { display: flex; gap: .6rem; align-items: flex-start; background: #fffbeb; border: 1px solid #fde68a;
+  padding: .8rem; border-radius: 10px; margin: 1rem 0; font-size: .9rem; }
+.mode-grid { display: grid; gap: 1rem; grid-template-columns: 1fr 1fr; }
+@media (max-width: 640px) { .mode-grid { grid-template-columns: 1fr; } }
+.mode-card { display: grid; gap: .4rem; text-align: left; background: #fff; border: 2px solid #e2e8f0;
+  border-radius: 14px; padding: 1.2rem; cursor: pointer; transition: .15s; }
+.mode-card:hover { transform: translateY(-2px); box-shadow: 0 10px 24px rgba(0,0,0,.08); }
+.mode-card.highlight { border-color: #059669; background: #f0fdf4; }
+.mode-card em { font-style: normal; color: var(--primary-600, #e11d48); font-weight: 700; font-size: .85rem; }
+.mode-card span { color: #64748b; font-size: .88rem; }
+.setup-progress { display: flex; justify-content: space-between; font-size: .85rem; color: #64748b; font-weight: 600; }
+.setup-track { height: 8px; background: #f1f5f9; border-radius: 999px; margin-top: .4rem; overflow: hidden; }
+.setup-fill { height: 100%; background: var(--primary-600, #e11d48); border-radius: 999px; transition: width .3s; }
+.setup-yesno { display: grid; grid-template-columns: 1fr 1fr; gap: .8rem; margin-top: 1rem; }
+.setup-inputrow { display: flex; gap: .6rem; margin-top: 1rem; }
+.setup-inputrow input { flex: 1; }
+.setup-foot { display: flex; justify-content: space-between; margin-top: 1.2rem; }
+.visit-banner { display: flex; gap: .5rem; align-items: center; background: #eff6ff; border: 1px solid #bfdbfe;
+  padding: .7rem .9rem; border-radius: 10px; margin: 1rem 0; font-size: .9rem; }
+.tracker { border: 1px solid #e2e8f0; border-radius: 12px; padding: 1rem; margin: 1rem 0; }
+.tracker h3 { display: flex; gap: .5rem; align-items: center; margin: 0 0 .7rem; }
+.tracker h3 em { font-style: normal; font-weight: 600; font-size: .8rem; color: #64748b; margin-left: auto; }
+.tracker-form { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; }
+.tracker-list { margin: .7rem 0 0 1rem; font-size: .88rem; color: #334155; }
+.tracker-list .muted { color: #94a3b8; list-style: none; margin-left: -1rem; }
+.setup-trackers-empty { background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 10px; padding: 1rem; color: #64748b; }
+/* Child Health Card */
+.birth-banner { display: flex; gap: .6rem; align-items: center; background: #f0fdf4; border: 2px solid #6ee7b7;
+  padding: .8rem 1rem; border-radius: 12px; margin: 1rem 0; font-size: .92rem; }
+.birth-banner button { margin-left: auto; white-space: nowrap; }
+.prenatal-box { background: #fffbeb; border: 2px solid #fcd34d; border-radius: 12px; padding: 1rem 1.1rem; margin: 1rem 0; }
+.prenatal-box h3 { margin: 0 0 .4rem; font-size: 1rem; display: flex; gap: .5rem; align-items: center; color: #92400e; }
+.prenatal-grid { display: grid; gap: .7rem; grid-template-columns: 1fr 1fr; }
+@media (max-width: 640px) { .prenatal-grid { grid-template-columns: 1fr; } }
+.prenatal-chip { display: grid; gap: .2rem; border-radius: 10px; padding: .7rem .8rem; font-size: .88rem;
+  border: 1.5px solid #e2e8f0; background: #fff; }
+.prenatal-chip strong { font-size: .85rem; }
+.prenatal-chip em { font-style: normal; font-size: .78rem; color: #64748b; }
+.prenatal-chip.flag { border-color: #f87171; background: #fef2f2; }
+.prenatal-chip.ok { border-color: #6ee7b7; background: #f0fdf4; }
+.growth-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: .6rem; }
+@media (max-width: 640px) { .growth-grid { grid-template-columns: 1fr 1fr; } }
+.growth-stat { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: .6rem; display: grid; gap: .15rem; }
+.growth-stat span { font-size: .75rem; color: #64748b; }
+.btn-cont-option { padding: .7rem; border-radius: 10px; border: 1.5px solid #e2e8f0; background: #fff; cursor: pointer; font-weight: 700; }
+.btn-cont-option:hover { border-color: var(--primary-600, #e11d48); }

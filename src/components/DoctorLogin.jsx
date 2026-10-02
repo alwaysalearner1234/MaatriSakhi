@@ -1,122 +1,172 @@
-import React, { useState } from 'react';
-import { Stethoscope, Lock, Mail, ArrowRight, Sparkles, Shield, ArrowLeft } from 'lucide-react';
+import React, { useState, useEffect } from "react";
+import { UI_TRANSLATIONS, LANGUAGES } from "../data/translations";
+import { Stethoscope, Mail, Lock, Eye, EyeOff, LogIn, Sparkles } from "lucide-react";
+import "./DoctorLogin.css";
 
-export default function DoctorLogin({ onLoginSuccess, onBackToHome }) {
-  const [doctorId, setDoctorId] = useState('');
-  const [password, setPassword] = useState('');
-  const [errorMsg, setErrorMsg] = useState('');
+// Backend address: set VITE_API_URL in .env.local (local) or in Render (live)
+const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
-  const handleLogin = (e) => {
-    e?.preventDefault();
-    if (!doctorId.trim()) {
-      setErrorMsg('Please enter your Doctor ID or Email');
+export default function DoctorLogin({ lang, onSelectLanguage, onNavigate }) {
+  const t = UI_TRANSLATIONS[lang] || UI_TRANSLATIONS.en;
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+
+  // If a saved token is still valid, go straight to the dashboard
+  useEffect(() => {
+    const token = localStorage.getItem("doctor_token");
+    if (!token) return;
+    fetch(`${API_BASE}/api/auth/me`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((res) => {
+        if (res.ok) onNavigate("doctor");
+        else localStorage.removeItem("doctor_token");
+      })
+      .catch(() => {
+        /* backend offline: stay on the login screen */
+      });
+  }, [onNavigate]);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!email || !password) {
+      setError("Please enter your email and password.");
       return;
     }
-    setErrorMsg('');
-    onLoginSuccess({
-      name: doctorId.includes('@') ? 'Dr. Priya Desai, MD (OBGYN)' : `Dr. ${doctorId}`,
-      id: doctorId || 'DOC-FOGSI-882',
-      role: 'Consultant Obstetrician & Gynaecologist'
-    });
+    setError("");
+    setLoading(true);
+
+    let response;
+    try {
+      response = await fetch(`${API_BASE}/api/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+    } catch {
+      setError("Can't reach the server. Please make sure the backend is running.");
+      setLoading(false);
+      return;
+    }
+
+    let data = {};
+    try {
+      data = await response.json();
+    } catch {
+      /* non-JSON reply */
+    }
+
+    if (response.ok && data.access_token) {
+      localStorage.setItem("doctor_token", data.access_token);
+      onNavigate("doctor");
+    } else if (response.status === 401) {
+      setError("Incorrect email or password.");
+    } else {
+      setError(
+        typeof data.detail === "string"
+          ? data.detail
+          : `Login failed (error ${response.status}). Please try again.`
+      );
+    }
+    setLoading(false);
   };
 
-  const handleDemoDoctorLogin = () => {
-    setDoctorId('dr.anita.fogsi@clinic.org');
-    setPassword('••••••••••••');
-    setErrorMsg('');
-    setTimeout(() => {
-      onLoginSuccess({
-        name: 'Dr. Anita Joshi, MD, DGO (FOGSI)',
-        id: 'DOC-FOGSI-402',
-        role: 'Consultant Obstetrician & Gynaecologist'
-      });
-    }, 250);
+  const fillDemoAccount = () => {
+    setEmail("doctor@maatri.sakhi");
+    setPassword("doctor123");
+    setError("");
   };
 
   return (
-    <div className="doctor-login-page animate-fade-in">
-      <div className="login-card-container">
-        {/* Back Link */}
-        <button
-          className="back-link-btn"
-          onClick={onBackToHome}
-          type="button"
-          style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', color: 'var(--text-muted)', marginBottom: '1rem', fontSize: '0.9rem' }}
-        >
-          <ArrowLeft size={16} />
-          <span>Back to Home</span>
+    <div className="dl-page">
+      <div className="dl-card">
+        <div className="dl-header">
+          <div className="dl-badge">
+            <Stethoscope size={26} />
+          </div>
+          <h2 className="dl-title">{t.loginTitle || "Doctor Login"}</h2>
+          <p className="dl-subtitle">
+            {t.loginSubtitle || "Access your patient dashboard"}
+          </p>
+        </div>
+
+        {error && (
+          <div className="dl-error" role="alert">
+            {error}
+          </div>
+        )}
+
+        <form className="dl-form" onSubmit={handleSubmit} noValidate>
+          <label className="dl-label" htmlFor="dl-email">
+            {t.email || "Email"}
+          </label>
+          <div className="dl-input-wrap">
+            <Mail size={18} className="dl-input-icon" />
+            <input
+              id="dl-email"
+              type="email"
+              autoComplete="email"
+              className="dl-input"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder={t.emailPlaceholder || "Enter your email"}
+            />
+          </div>
+
+          <label className="dl-label" htmlFor="dl-password">
+            {t.password || "Password"}
+          </label>
+          <div className="dl-input-wrap">
+            <Lock size={18} className="dl-input-icon" />
+            <input
+              id="dl-password"
+              type={showPassword ? "text" : "password"}
+              autoComplete="current-password"
+              className="dl-input dl-input-pw"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder={t.passwordPlaceholder || "Enter password"}
+            />
+            <button
+              type="button"
+              className="dl-eye"
+              onClick={() => setShowPassword((s) => !s)}
+              aria-label={showPassword ? "Hide password" : "Show password"}
+            >
+              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
+          </div>
+
+          <button type="submit" className="dl-submit" disabled={loading}>
+            {loading ? (
+              <>
+                <span className="dl-spinner" /> {t.loggingIn || "Logging in..."}
+              </>
+            ) : (
+              <>
+                <LogIn size={18} /> {t.login || "Login"}
+              </>
+            )}
+          </button>
+        </form>
+
+        <button type="button" className="dl-demo" onClick={fillDemoAccount}>
+          <Sparkles size={16} /> {t.useDemoAccount || "Use demo account"}
         </button>
 
-        <div className="login-card">
-          <div className="login-card-header">
-            <div className="login-icon-badge">
-              <Stethoscope size={28} color="#e11d48" />
-            </div>
-            <h2>Doctor Portal</h2>
-            <p>FOGSI Preconception Pre-Visit Clinician Management</p>
-          </div>
-
-          {errorMsg && (
-            <div className="login-error-alert">
-              <span>{errorMsg}</span>
-            </div>
-          )}
-
-          <form onSubmit={handleLogin} className="login-form">
-            <div className="form-group">
-              <label htmlFor="doctorId">Doctor ID / Email</label>
-              <div className="input-with-icon">
-                <Mail size={18} color="var(--text-muted)" />
-                <input
-                  id="doctorId"
-                  type="text"
-                  placeholder="e.g. dr.anita@hospital.org or DOC-102"
-                  value={doctorId}
-                  onChange={(e) => setDoctorId(e.target.value)}
-                  autoComplete="username"
-                />
-              </div>
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="password">Password</label>
-              <div className="input-with-icon">
-                <Lock size={18} color="var(--text-muted)" />
-                <input
-                  id="password"
-                  type="password"
-                  placeholder="Enter clinic password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  autoComplete="current-password"
-                />
-              </div>
-            </div>
-
-            <div className="login-button-group">
-              <button type="submit" className="btn-primary-lg" style={{ width: '100%', justifyContent: 'center' }}>
-                <span>Login</span>
-                <ArrowRight size={18} />
-              </button>
-
-              <button
-                type="button"
-                className="btn-demo-outline"
-                onClick={handleDemoDoctorLogin}
-                style={{ width: '100%', justifyContent: 'center', marginTop: '0.75rem' }}
-                id="btn-demo-doctor"
-              >
-                <Sparkles size={16} color="#e11d48" />
-                <span>Demo Doctor (Instant Access)</span>
-              </button>
-            </div>
-          </form>
-
-          <div className="login-security-notice">
-            <Shield size={14} color="var(--sage-600)" />
-            <span>FOGSI Clinical Data Security • Prototype Mock Authentication</span>
-          </div>
-        </div>
+        <p className="dl-footer">
+          {t.dontHaveAccount || "Don't have an account?"}{" "}
+          <button
+            type="button"
+            className="dl-link"
+            onClick={() => onNavigate("signup")}
+          >
+            {t.signup || "Sign Up"}
+          </button>
+        </p>
       </div>
     </div>
   );

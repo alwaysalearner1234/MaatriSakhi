@@ -68,6 +68,25 @@ This application is strictly grounded in the official medical guidelines of the 
 
 ---
 
+## 🤱 Pregnancy Companion Mode (In Development)
+
+**Phase 1: Storage, Login, Consent** - Database infrastructure implemented:
+- PostgreSQL database with 4 new tables (mothers, pregnancies, entries, visits)
+- JSON schema validation for all data
+- DPDP Act 2023 consent compliance
+- Medical thresholds marked as "placeholders, to be confirmed by clinicians"
+- Render.com PostgreSQL deployment ready
+
+**Phase 2-11: Mode Switch & Pregnancy Features** - Not yet implemented.
+- New "I'm pregnant" mode will run alongside existing "Planning a pregnancy" flow
+- Uses separate database tables to maintain zero impact on existing preconception data
+- All 8 languages and voice support will carry over
+- Existing preconception app flow completely unchanged
+
+**Safety**: FOGSI guidelines only, pre-consultation only, no diagnoses, no prescriptions, never advise stopping medication. Out-of-range readings show "Contact your doctor" only.
+
+---
+
 ## 🚀 Quick Start
 
 ### Prerequisites
@@ -125,6 +144,58 @@ MaatriSakhi/
 ├── package.json
 └── vite.config.js
 ```
+
+---
+
+## 🚀 Render Deployment Instructions
+
+### Prerequisites
+- Render.com account
+- Supabase project (free tier OK)
+
+### 1. Get Supabase Connection String
+1. Go to Supabase dashboard → Settings → Database
+2. Note the "Connection string" for the "Postgres pooler (session mode)"
+3. It will look like: `postgresql://postgres:password@db.xxx.supabase.co:6543/postgres`
+
+### 2. Add Python Web Service
+1. Go to Render dashboard → New Web Service
+2. Select "Deploy from a Git Repository"
+3. Repository: your MaatriSakhi repo
+4. Build Command: `pip install -r requirements.txt`
+5. Start Command: `uvicorn api:app --host 0.0.0.0 --port $PORT`
+6. Service Type: Web Service
+
+### 3. Environment Variables
+Add these to the Web Service:
+```env
+DATABASE_URL=postgresql://postgres:password@db.xxx.supabase.co:6543/postgres?sslmode=require
+SECRET_KEY=your-super-secret-key-for-jwt-tokens
+NODE_ENV=production
+ALLOWED_ORIGINS=http://localhost:5173
+```
+
+### 4. requirements.txt
+Create `requirements.txt` at the project root:
+```
+fastapi
+uvicorn[standard]
+asyncpg
+bcrypt
+PyJWT
+pydantic
+```
+
+### 5. Deploy
+- Push code to git
+- Render will auto-detect and build
+- The Static Site serves the React frontend on port 80
+- The Python Web Service runs the API on port `$PORT`
+
+### 6. Verify
+- Frontend: `https://maatrisakhi.onrender.com/` (React SPA)
+- API: `https://your-service-name.onrender.com/docs` (FastAPI auto-docs)
+- Health: `https://your-service-name.onrender.com/health`
 
 ---
 
