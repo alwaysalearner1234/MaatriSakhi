@@ -3,6 +3,7 @@ import { SECTIONS_META, QUESTIONS, generateClinicianFlags } from '../data/fogsiQ
 import { UI_TRANSLATIONS, LANGUAGES } from '../data/translations';
 import { formatAnswerValue } from '../utils/answerFormatter';
 import AttachmentInput from './common/AttachmentInput';
+import { serializableAttachments } from '../utils/motherApi';
 import {
   Check,
   X,
@@ -86,10 +87,19 @@ export default function ContinuousAssessmentPage({
   const handleSubmitWithExtras = () => {
     console.log('[SUBMIT] button clicked');
     try {
+      // Serialize attachments so the portal JSON stays self-contained:
+      // server files by URL, small offline files embedded, session-only
+      // previews as name references.
+      const serializeMap = (m) =>
+        Object.fromEntries(
+          Object.entries(m || {})
+            .map(([k, list]) => [k, serializableAttachments(list)])
+            .filter(([, list]) => list.length > 0)
+        );
       if (onCompleteAssessment) onCompleteAssessment(
         patientDetails,
         { ...extraNotes },
-        { section: sectionAttachments, extra: extraAttachments }
+        { section: serializeMap(sectionAttachments), extra: serializeMap(extraAttachments) }
       );
     } catch (err) {
       // App-level handler also catches; this is a safety net so the

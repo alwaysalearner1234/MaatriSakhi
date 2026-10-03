@@ -137,6 +137,7 @@ export default function DoctorDashboard({
   // Extract section-level Doctor's Notes (ONE notes field per assessment section/page)
   const assessmentSectionNotes = useMemo(() => {
     const sNotes = currentAssessment?.sectionNotes || activePatient?.sectionNotes || {};
+    const sAtts = currentAssessment?.sectionAttachments || activePatient?.sectionAttachments || {};
     const notesList = [];
 
     SECTIONS_META.forEach(sec => {
@@ -152,11 +153,13 @@ export default function DoctorDashboard({
           .join('; ')
       );
 
-      if (noteText && String(noteText).trim()) {
+      const atts = Array.isArray(sAtts[sec.id]) ? sAtts[sec.id] : [];
+      if ((noteText && String(noteText).trim()) || atts.length > 0) {
         notesList.push({
           sectionId: sec.id,
           sectionTitle: sec?.title?.en || sec.id,
-          note: String(noteText).trim()
+          note: noteText ? String(noteText).trim() : '',
+          attachments: atts
         });
       }
     });
@@ -870,8 +873,26 @@ export default function DoctorDashboard({
                       </span>
                     </div>
                     <div className="note-card-content">
-                      <div className="note-caption">Doctor's Clinical Note:</div>
-                      <div className="note-body">"{item.note}"</div>
+                      {item.note && (
+                        <>
+                          <div className="note-caption">Doctor's Clinical Note:</div>
+                          <div className="note-body">"{item.note}"</div>
+                        </>
+                      )}
+                      {(item.attachments || []).length > 0 && (
+                        <div className="attach-list">
+                          {item.attachments.map((a, ai) => {
+                            const url = resolveAttachmentUrl(a);
+                            return url ? (
+                              <a key={ai} href={url} target="_blank" rel="noopener noreferrer" className="attach-view-link">
+                                📎 {a.name || 'attachment'}
+                              </a>
+                            ) : (
+                              <span key={ai} className="attach-view-link">📎 {a.name || 'attachment'}</span>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}
