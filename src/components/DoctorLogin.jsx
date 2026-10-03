@@ -1,22 +1,21 @@
 import React, { useState, useEffect } from "react";
 import { UI_TRANSLATIONS } from "../data/translations";
 import { Stethoscope, Mail, Lock, Eye, EyeOff, LogIn, Sparkles } from "lucide-react";
+import { doctorLogin, validateDoctorToken, DEMO_DOCTOR } from "../utils/doctorApi";
 import "./DoctorLogin.css";
 
-// Backend address: set VITE_API_URL in .env.local (local) or in Render (live)
-const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8000";
-
-// Demo doctor: doctor@maatri.sakhi / doctor123 (seeded by database_init.py).
-// Supports both prop styles: onNavigate(view) OR onLoginSuccess(info)/onBackToHome().
-const DEMO_DOCTOR = { email: "doctor@maatri.sakhi", password: "doctor123" };
-
-export default function DoctorLogin({ lang, onSelectLanguage, onNavigate, onLoginSuccess, onBackToHome }) {
+// Doctor login with offline-capable demo account:
+// doctor@maatri.sakhi / doctor123 works WITH backend (seeded) and WITHOUT
+// (local demo mode). Supports both prop styles: onNavigate(view) OR
+// onLoginSuccess(info) / onBackToHome() / onSignup().
+export default function DoctorLogin({ lang, onSelectLanguage, onNavigate, onLoginSuccess, onBackToHome, onSignup }) {
   const t = UI_TRANSLATIONS[lang] || UI_TRANSLATIONS.en;
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [offlineNote, setOfflineNote] = useState(false);
 
   // Route to the dashboard through whichever callback the parent provided.
   const goDoctor = (info) => {
@@ -24,60 +23,27 @@ export default function DoctorLogin({ lang, onSelectLanguage, onNavigate, onLogi
     else if (onLoginSuccess) onLoginSuccess(info || { email: email || DEMO_DOCTOR.email });
   };
 
-  // If a saved token is still valid, go straight to the dashboard
+  // If a saved session is still valid, go straight to the dashboard
   useEffect(() => {
-    const token = localStorage.getItem("doctor_token");
-    if (!token) return;
-    fetch(`${API_BASE}/api/auth/me`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then((res) => {
-        if (res.ok) goDoctor();
-        else localStorage.removeItem("doctor_token");
-      })
-      .catch(() => {
-        /* backend offline: stay on the login screen */
-      });
+    validateDoctorToken().then((doctor) => {
+      if (doctor) goDoctor(doctor);
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const doLogin = async (loginEmail, loginPassword) => {
     setError("");
+    setOfflineNote(false);
     setLoading(true);
-
-    let response;
     try {
-      response = await fetch(`${API_BASE}/api/auth/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: loginEmail, password: loginPassword }),
-      });
-    } catch {
-      setError("Can't reach the server. Please make sure the backend is running.");
+      const { doctor, offline } = await doctorLogin({ email: loginEmail, password: loginPassword });
+      if (offline) setOfflineNote(true);
+      goDoctor(doctor);
+    } catch (err) {
+      setError(err.message || "Login failed. Please try again.");
+    } finally {
       setLoading(false);
-      return;
     }
-
-    let data = {};
-    try {
-      data = await response.json();
-    } catch {
-      /* non-JSON reply */
-    }
-
-    if (response.ok && data.access_token) {
-      localStorage.setItem("doctor_token", data.access_token);
-      goDoctor(data.doctor || { email: loginEmail });
-    } else if (response.status === 401) {
-      setError("Incorrect email or password.");
-    } else {
-      setError(
-        typeof data.detail === "string"
-          ? data.detail
-          : `Login failed (error ${response.status}). Please try again.`
-      );
-    }
-    setLoading(false);
   };
 
   const handleSubmit = (e) => {
@@ -94,6 +60,11 @@ export default function DoctorLogin({ lang, onSelectLanguage, onNavigate, onLogi
     setEmail(DEMO_DOCTOR.email);
     setPassword(DEMO_DOCTOR.password);
     doLogin(DEMO_DOCTOR.email, DEMO_DOCTOR.password);
+  };
+
+  const goSignup = () => {
+    if (onNavigate) onNavigate("signup");
+    else if (onSignup) onSignup();
   };
 
   return (
@@ -173,33 +144,26 @@ export default function DoctorLogin({ lang, onSelectLanguage, onNavigate, onLogi
           <Sparkles size={16} /> {t.useDemoAccount || "Try demo account →"}
         </button>
         <p className="dl-demo-creds">
-          Demo: <code>{DEMO_DOCTOR.email} / {DEMO_DOCTOR.password}</code>
+          Demo: <code>{DEMO_DOCTOR.email} / {DEMO_DOCTOR.password}</code> — works even without backend
         </p>
+        {offlineNote && (
+          <p className="dl-offline-note">Offline demo mode — data stays on this device.</p>
+        )}
 
-        {(onNavigate || onBackToHome) && (
-          <p className="dl-footer">
-            {onNavigate ? (
-              <>
-                {t.dontHaveAccount || "Don't have an account?"}{" "}
-                <button
-                  type="button"
-                  className="dl-link"
-                  onClick={() => onNavigate("signup")}
-                >
-                  {t.signup || "Sign Up"}
-                </button>
-              </>
-            ) : (
-              <button
-                type="button"
-                className="dl-link"
-                onClick={onBackToHome}
-              >
+        <p className="dl-footer">
+          {t.dontHaveAccount || "Don't have an account?"}{" "}
+          <button type="button" className="dl-link" onClick={goSignup}>
+            {t.signup || "Sign Up"}
+          </button>
+          {onBackToHome && !onNavigate && (
+            <>
+              {" · "}
+              <button type="button" className="dl-link" onClick={onBackToHome}>
                 ← Back to home
               </button>
-            )}
-          </p>
-        )}
+            </>
+          )}
+        </p>
       </div>
     </div>
   );

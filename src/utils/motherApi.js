@@ -174,14 +174,55 @@ export async function myPregnancies() {
 export const API_BASE_URL = API_BASE || 'http://localhost:8000';
 const MAX_ATTACH_BYTES = 10 * 1024 * 1024;
 
-function localAttachment(file) {
+// Max file size embedded as data: URL for offline notes (keeps portal JSON
+// self-contained). Larger files keep a session-only preview instead.
+const MAX_EMBED_BYTES = 5 * 1024 * 1024;
+
+function readAsDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(r.result);
+    r.onerror = () => reject(new Error('Could not read file.'));
+    r.readAsDataURL(file);
+  });
+}
+
+async function localAttachment(file) {
+  const kind = (file.type || '').startsWith('image/') ? 'image' : 'pdf';
+  if (file.size <= MAX_EMBED_BYTES) {
+    try {
+      const url = await readAsDataUrl(file);
+      return { name: file.name, url, kind, size: file.size, local: true, embedded: true };
+    } catch { /* fall through to preview-only */ }
+  }
   return {
     name: file.name,
     url: URL.createObjectURL(file),
-    kind: (file.type || '').startsWith('image/') ? 'image' : 'pdf',
+    kind,
     size: file.size,
     local: true,
+    embedded: false,
   };
+}
+
+// Strip attachments down to what survives a save/reload or JSON download:
+// server URLs and embedded data: URLs pass through; session-only previews
+// become name-only references (the binary is gone after reload).
+export function serializableAttachment(a) {
+  if (!a) return null;
+  if (a.file_path || (a.url && /^(https?:|data:)/.test(a.url))) {
+    const { name, kind } = a;
+    return { name, kind, url: a.url || null, file_path: a.file_path || null };
+  }
+  if (a.url && a.url.startsWith('/')) {
+    const { name, kind, url } = a;
+    return { name, kind, url, file_path: a.file_path || null };
+  }
+  return { name: a.name, kind: a.kind, local: true };
+}
+
+export function serializableAttachments(list) {
+  return (list || []).map(serializableAttachment).filter(Boolean);
 }
 
 export function attachmentKind(file) {

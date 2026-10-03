@@ -17,6 +17,7 @@ import ChildSetupFlow from './components/mother/ChildSetupFlow';
 import ChildDashboard from './components/mother/ChildDashboard';
 import { getLocalMother, motherLogout, listChildren, myPregnancies } from './utils/motherApi';
 import DoctorLogin from './components/DoctorLogin';
+import DoctorSignup from './components/DoctorSignup';
 import AddPatientModal from './components/AddPatientModal';
 import PatientProfileView from './components/PatientProfileView';
 import LanguageSelector from './components/LanguageSelector';
@@ -652,6 +653,16 @@ export default function App() {
           <DoctorLogin
             onLoginSuccess={handleDoctorLoginSuccess}
             onBackToHome={() => setCurrentView('landing')}
+            onSignup={() => setCurrentView('doctor_signup')}
+          />
+        )}
+
+        {/* 2b. DOCTOR SIGN-UP (+ demo entry, works offline too) */}
+        {currentView === 'doctor_signup' && (
+          <DoctorSignup
+            onSignupSuccess={handleDoctorLoginSuccess}
+            onBackToLogin={() => setCurrentView('doctor_login')}
+            onUseDemo={handleDoctorLoginSuccess}
           />
         )}
 

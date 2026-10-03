@@ -558,6 +558,15 @@ async def signup(
     }
 
 
+@app.post("/api/auth/signup")
+async def api_signup(
+    payload: DoctorSignup,
+    connection=Depends(get_db),
+):
+    """API-prefixed alias of doctor sign-up (frontend uses /api/* consistently)."""
+    return await signup(payload, connection)
+
+
 # ---------------------------------------------------------------------------
 # Patient endpoints
 # ---------------------------------------------------------------------------
