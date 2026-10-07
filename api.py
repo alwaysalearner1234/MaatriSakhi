@@ -221,12 +221,29 @@ VISIT_SCHEMA = {
     },
 }
 
+QUESTION_SCHEMA = {
+    "type": "object",
+    "additionalProperties": False,
+    "required": ["id", "mother_id", "pregnancy_id", "question_text"],
+    "properties": {
+        "id": {"type": "string", "format": "uuid"},
+        "mother_id": {"type": "string", "format": "uuid"},
+        "pregnancy_id": {"type": "string", "format": "uuid"},
+        "question_text": {"type": "string", "minLength": 1},
+        "is_suggested": {"type": "boolean"},
+        "status": {"type": "string", "enum": ["open", "answered"]},
+        "answer_text": {"type": ["string", "null"]},
+        "created_at": {"type": "string", "format": "date-time"},
+    },
+}
+
 # Create validators
 doctor_validator = Draft202012Validator(DOCTOR_SCHEMA)
 patient_validator = Draft202012Validator(PATIENT_SCHEMA)
 pregnancy_validator = Draft202012Validator(PREGNANCY_SCHEMA)
 entry_validator = Draft202012Validator(ENTRY_SCHEMA)
 visit_validator = Draft202012Validator(VISIT_SCHEMA)
+question_validator = Draft202012Validator(QUESTION_SCHEMA)
 
 
 def validate_model(data: dict, validator: Draft202012Validator) -> list:
@@ -271,7 +288,7 @@ BASE_DIR = Path(__file__).resolve().parent
 UPLOAD_DIR = BASE_DIR / "uploads"
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
-ALLOWED_UPLOAD_EXTS = {".png", ".jpg", ".jpeg", ".webp", ".pdf"}
+ALLOWED_UPLOAD_EXTS = {".png", ".jpg", ".jpeg", ".webp", ".pdf", ".txt"}
 MAX_UPLOAD_BYTES = 10 * 1024 * 1024  # 10 MB
 
 app.mount("/uploads", StaticFiles(directory=str(UPLOAD_DIR)), name="uploads")
@@ -429,7 +446,8 @@ async def upload_attachment(
 
     stored_name = f"{uuid.uuid4().hex}{ext}"
     (UPLOAD_DIR / stored_name).write_bytes(content)
-    kind = "pdf" if ext == ".pdf" else "image"
+    # .txt is used for patient-shareable report summaries; kind is only a UI hint.
+    kind = "pdf" if ext == ".pdf" else "image" if ext in {".png", ".jpg", ".jpeg", ".webp"} else "file"
     return {
         "file_path": f"uploads/{stored_name}",
         "url": f"/uploads/{stored_name}",
@@ -1096,6 +1114,96 @@ async def update_child(child_id: str, payload: ChildUpdate,
         "SELECT * FROM pregnancies WHERE id = $1::uuid", str(child["pregnancy_id"])
     )
     return {**child, "prenatal_environment": _prenatal_context(preg) if preg else None}
+
+
+# ---------------------------------------------------------------------------
+# Mother -> Doctor questions + shared home readings
+# - Mother asks free-text or suggested questions (stored in questions table).
+# - Mother toggles doctor_access_granted on her pregnancy ("share with doctor").
+# - Doctor reads GET /readings/shared: home BP/sugar entries + open questions
+#   of every mother who granted access. This is how home-checked readings
+#   appear in the doctor dashboard.
+# ---------------------------------------------------------------------------
+
+class QuestionCreate(BaseModel):
+    pregnancy_id: str = Field(...)
+    question_text: str = Field(..., min_length=1)
+    is_suggested: bool = Field(default=False)
+
+
+class SharingToggle(BaseModel):
+    doctor_access_granted: bool = Field(...)
+
+
+@app.post("/questions")
+async def ask_question(payload: QuestionCreate, current_mother=Depends(get_current_mother),
+                       connection=Depends(get_db)):
+    """Mother asks her doctor a question (typed or picked from top-3 suggestions)."""
+    if not current_mother["consent_given"]:
+        raise HTTPException(status_code=403, detail="Please accept the consent screen first")
+    if not await _mother_owns_pregnancy(connection, current_mother["id"], payload.pregnancy_id):
+        raise HTTPException(status_code=404, detail="Pregnancy not found")
+    qid = str(uuid.uuid4())
+    await connection.execute(
+        """INSERT INTO questions (id, mother_id, pregnancy_id, question_text, is_suggested, status)
+           VALUES ($1::uuid, $2::uuid, $3::uuid, $4, $5, 'open')""",
+        qid, current_mother["id"], payload.pregnancy_id,
+        payload.question_text.strip(), payload.is_suggested,
+    )
+    return dict(await connection.fetchrow("SELECT * FROM questions WHERE id = $1::uuid", qid))
+
+
+@app.get("/questions")
+async def list_questions(pregnancy_id: str, current_mother=Depends(get_current_mother),
+                         connection=Depends(get_db)):
+    if not await _mother_owns_pregnancy(connection, current_mother["id"], pregnancy_id):
+        raise HTTPException(status_code=404, detail="Pregnancy not found")
+    rows = await connection.fetch(
+        "SELECT * FROM questions WHERE mother_id = $1::uuid AND pregnancy_id = $2::uuid ORDER BY created_at DESC",
+        current_mother["id"], pregnancy_id,
+    )
+    return [dict(r) for r in rows]
+
+
+@app.put("/pregnancies/{pregnancy_id}/sharing")
+async def set_sharing(pregnancy_id: str, payload: SharingToggle,
+                      current_mother=Depends(get_current_mother), connection=Depends(get_db)):
+    """Mother grants/revokes doctor access to her home readings + questions."""
+    if not await _mother_owns_pregnancy(connection, current_mother["id"], pregnancy_id):
+        raise HTTPException(status_code=404, detail="Pregnancy not found")
+    await connection.execute(
+        "UPDATE pregnancies SET doctor_access_granted = $1, updated_at = NOW() WHERE id = $2::uuid",
+        payload.doctor_access_granted, pregnancy_id,
+    )
+    return dict(await connection.fetchrow("SELECT * FROM pregnancies WHERE id = $1::uuid", pregnancy_id))
+
+
+@app.get("/readings/shared")
+async def shared_readings(current_doctor=Depends(get_current_doctor), connection=Depends(get_db)):
+    """Doctor dashboard: home BP/sugar entries + open questions from every mother
+    who granted access. Newest first, capped at 100 entries."""
+    rows = await connection.fetch(
+        """SELECT e.id, e.pregnancy_id, e.type, e.value_json, e.note, e.file_path, e.created_at,
+                  m.name AS mother_name, p.current_week
+           FROM entries e
+           JOIN pregnancies p ON p.id = e.pregnancy_id
+           JOIN mothers m ON m.id = p.mother_id
+           WHERE p.doctor_access_granted = TRUE
+           ORDER BY e.created_at DESC LIMIT 100"""
+    )
+    qrows = await connection.fetch(
+        """SELECT q.id, q.pregnancy_id, q.question_text, q.is_suggested, q.status, q.created_at,
+                  m.name AS mother_name
+           FROM questions q
+           JOIN pregnancies p ON p.id = q.pregnancy_id
+           JOIN mothers m ON m.id = q.mother_id
+           WHERE p.doctor_access_granted = TRUE AND q.status = 'open'
+           ORDER BY q.created_at DESC LIMIT 100"""
+    )
+    return {
+        "readings": [dict(r) for r in rows],
+        "questions": [dict(r) for r in qrows],
+    }
 
 
 # ---------------------------------------------------------------------------

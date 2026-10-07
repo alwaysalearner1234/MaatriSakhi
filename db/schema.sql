@@ -96,9 +96,25 @@ CREATE TABLE IF NOT EXISTS children (
 CREATE INDEX IF NOT EXISTS idx_children_mother ON children(mother_id);
 CREATE INDEX IF NOT EXISTS idx_children_pregnancy ON children(pregnancy_id);
 
+-- 6) Question — a mother's question for her doctor (free text or top-3 suggestion).
+-- Linked to Mother + Pregnancy so the doctor sees it with the home readings.
+CREATE TABLE IF NOT EXISTS questions (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  mother_id UUID NOT NULL REFERENCES mothers(id) ON DELETE CASCADE,
+  pregnancy_id UUID NOT NULL REFERENCES pregnancies(id) ON DELETE CASCADE,
+  question_text TEXT NOT NULL,
+  is_suggested BOOLEAN NOT NULL DEFAULT FALSE,
+  status VARCHAR(20) NOT NULL DEFAULT 'open' CHECK (status IN ('open', 'answered')),
+  answer_text TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_questions_mother ON questions(mother_id);
+CREATE INDEX IF NOT EXISTS idx_questions_pregnancy ON questions(pregnancy_id);
+
 -- Lock down Supabase public Data API; backend (postgres role) still has full access
 ALTER TABLE mothers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE pregnancies ENABLE ROW LEVEL SECURITY;
 ALTER TABLE entries ENABLE ROW LEVEL SECURITY;
 ALTER TABLE visits ENABLE ROW LEVEL SECURITY;
 ALTER TABLE children ENABLE ROW LEVEL SECURITY;
+ALTER TABLE questions ENABLE ROW LEVEL SECURITY;

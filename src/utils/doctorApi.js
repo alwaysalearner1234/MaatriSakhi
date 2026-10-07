@@ -2,6 +2,7 @@
 // Talks to FastAPI (/api/auth/*) when reachable, otherwise falls back to a
 // local offline mode so the demo doctor account works WITHOUT a backend.
 // Demo doctor: doctor@maatri.sakhi / doctor123 (seeded by database_init.py).
+import { getLocalSharedReadings as _getLocalSharedReadings } from './motherApi';
 
 export const DOCTOR_API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 export const DEMO_DOCTOR = {
@@ -113,4 +114,20 @@ export async function validateDoctorToken() {
 
 export function doctorLogout() {
   setToken(null);
+}
+
+// Home BP/sugar readings + open questions shared by mothers
+// (doctor_access_granted). Online via backend, else the same-browser
+// offline demo store.
+export async function fetchSharedReadings() {
+  const token = getDoctorToken();
+  if (token && !isLocalDoctorToken(token)) {
+    try {
+      const res = await fetch(`${DOCTOR_API_BASE}/readings/shared`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) return { ...(await res.json()), offline: false };
+    } catch { /* fall through to local store */ }
+  }
+  return { ..._getLocalSharedReadings(), offline: true };
 }

@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { HeartPulse, Droplet, CalendarClock, Plus, AlertCircle, RotateCcw, Baby, PartyPopper, Paperclip } from 'lucide-react';
 import { trackerFlags, daysUntilVisit, createEntry, listEntries, saveConsent, shouldPromptChildCard, resolveAttachmentUrl } from '../../utils/motherApi';
 import AttachmentInput from '../common/AttachmentInput';
+import AskDoctor from './AskDoctor';
 import './mother.css';
 
 function entryFileLink(e) {
@@ -20,7 +21,7 @@ function entryFileLink(e) {
 //  - Sugar tracker visible IFF has_gestational_diabetes OR doctor sugar limit set
 // Tracker data -> Entry table. next_visit_date drives the Visit countdown.
 // Birth transition: full-term (>=37w) or "baby born" button prompts Child Health Card creation.
-export default function PregnancyDashboard({ mother, pregnancy, onUpdateMother, onBack, child, onCreateChild, onOpenChild }) {
+export default function PregnancyDashboard({ mother, pregnancy, onUpdateMother, onUpdatePregnancy, onBack, child, onCreateChild, onOpenChild }) {
   const { bpOn, sugarOn } = useMemo(() => trackerFlags(pregnancy), [pregnancy]);
   const [entries, setEntries] = useState([]);
   const [bp, setBp] = useState({ sys: '', dia: '', note: '' });
@@ -178,6 +179,14 @@ export default function PregnancyDashboard({ mother, pregnancy, onUpdateMother, 
             </ul>
           </section>
         )}
+
+        <AskDoctor
+          pregnancy={pregnancy}
+          entries={entries}
+          onSharingChanged={(granted) => {
+            if (onUpdatePregnancy) onUpdatePregnancy({ ...pregnancy, doctor_access_granted: granted });
+          }}
+        />
 
         {msg && <div className="mother-ok">{msg}</div>}
         {err && <div className="mother-error"><AlertCircle size={15} /> {err}</div>}

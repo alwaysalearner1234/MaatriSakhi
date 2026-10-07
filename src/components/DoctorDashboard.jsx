@@ -6,9 +6,15 @@ import { calculateAssessmentAnalytics, generateAssessmentJson, downloadAssessmen
 import AssessmentVisualisation from './AssessmentVisualisation';
 import AttachmentInput from './common/AttachmentInput';
 import { resolveAttachmentUrl } from '../utils/motherApi';
+import { fetchSharedReadings } from '../utils/doctorApi';
+import { buildShareText, shareReportFile, whatsappLink } from '../utils/shareReport';
 import {
   Stethoscope,
   Printer,
+  Share2,
+  Link2,
+  House,
+  MessageCircleQuestion,
   CheckSquare,
   AlertTriangle,
   AlertCircle,
@@ -55,7 +61,7 @@ export default function DoctorDashboard({
   onUpdatePatient,
   activeDoctor
 }) {
-  // Navigation Tabs: 'visualisation' | 'dashboard' | 'patients' | 'summary' | 'reports'
+  // Navigation Tabs: 'visualisation' | 'dashboard' | 'patients' | 'summary' | 'reports' | 'home'
   const [activeTab, setActiveTab] = useState(initialTab || 'visualisation');
   const [selectedPatientId, setSelectedPatientId] = useState(currentActivePatientId || patientsList[0]?.id);
 
@@ -109,6 +115,65 @@ export default function DoctorDashboard({
   // Multi-consultation assessment selection & JSON modal
   const [selectedAssessmentId, setSelectedAssessmentId] = useState(null);
   const [isJsonModalOpen, setIsJsonModalOpen] = useState(false);
+
+  // Shareable patient report (native share → hosted link → download)
+  const [shareBusy, setShareBusy] = useState(false);
+  const [shareLink, setShareLink] = useState('');
+  const [shareMsg, setShareMsg] = useState('');
+
+  // Home BP/sugar readings + questions shared by mothers
+  const [sharedData, setSharedData] = useState({ readings: [], questions: [] });
+  const [sharedLoading, setSharedLoading] = useState(false);
+  const [sharedOffline, setSharedOffline] = useState(false);
+
+  const loadShared = async () => {
+    setSharedLoading(true);
+    try {
+      const data = await fetchSharedReadings();
+      setSharedData({ readings: data.readings || [], questions: data.questions || [] });
+      setSharedOffline(!!data.offline);
+    } catch {
+      setSharedData({ readings: [], questions: [] });
+    } finally {
+      setSharedLoading(false);
+    }
+  };
+
+  const handleShareReport = async () => {
+    setShareMsg('');
+    setShareLink('');
+    setShareBusy(true);
+    try {
+      const flags = activePatient ? generateClinicianFlags(answers) : [];
+      const text = buildShareText({ patient: activePatient, assessment: currentAssessment || {}, flags, answers });
+      const safeName = (activePatient?.name || 'Patient').replace(/[^a-zA-Z0-9_-]/g, '_');
+      const filename = `MaatriSakhi-summary-${safeName}-${new Date().toISOString().slice(0, 10)}.txt`;
+      const result = await shareReportFile({ filename, text });
+      if (result.shared) {
+        setShareMsg('Shared ✓ — sent through your share sheet (e.g. WhatsApp).');
+      } else if (result.url) {
+        setShareLink(result.url);
+        setShareMsg('Link ready — send it to the patient (opens the summary in their browser).');
+      }
+    } catch (err) {
+      // Final fallback: plain download, same as Export JSON.
+      try {
+        const blob = new Blob([buildShareText({ patient: activePatient, assessment: currentAssessment || {}, flags: [], answers })], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `MaatriSakhi-summary-${(activePatient?.name || 'Patient').replace(/[^a-zA-Z0-9_-]/g, '_')}.txt`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        setShareMsg('Downloaded — send the file to the patient manually.');
+      } catch {
+        setShareMsg(err.message || 'Sharing failed. Use Print / PDF instead.');
+      }
+    } finally {
+      setShareBusy(false);
+    }
+  };
 
   const activePatient = useMemo(() => {
     return patientsList.find(p => p.id === selectedPatientId) || patientsList[0];
@@ -319,6 +384,18 @@ export default function DoctorDashboard({
           </button>
 
           <button
+            className="btn-primary-lg"
+            style={{ padding: '0.65rem 1.25rem', fontSize: '0.9rem' }}
+            onClick={handleShareReport}
+            disabled={shareBusy}
+            type="button"
+            title="Share this patient's pre-visit summary with them (WhatsApp / link)"
+          >
+            <Share2 size={16} />
+            <span>{shareBusy ? 'Sharing…' : 'Share with patient'}</span>
+          </button>
+
+          <button
             className="nav-pill-btn"
             style={{ background: 'rgba(255,255,255,0.15)', color: 'white', borderColor: 'rgba(255,255,255,0.2)' }}
             onClick={onBackToChat}
@@ -327,6 +404,35 @@ export default function DoctorDashboard({
             <span>Patient View</span>
           </button>
         </div>
+
+        {(shareLink || shareMsg) && (
+          <div className="share-result-bar btn-print-hide">
+            {shareLink ? (
+              <>
+                <Link2 size={15} />
+                <a href={shareLink} target="_blank" rel="noopener noreferrer" className="share-link">{shareLink}</a>
+                <button
+                  type="button"
+                  className="btn-secondary-clinical"
+                  onClick={() => navigator.clipboard?.writeText(shareLink).then(() => setShareMsg('Link copied ✓'))}
+                >
+                  Copy
+                </button>
+                <a
+                  className="btn-secondary-clinical"
+                  href={whatsappLink(shareLink, activePatient?.name)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ textDecoration: 'none' }}
+                >
+                  WhatsApp
+                </a>
+              </>
+            ) : (
+              <span>{shareMsg}</span>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Top Clinical Navigation Tabs */}
@@ -383,6 +489,16 @@ export default function DoctorDashboard({
         >
           <FileText size={16} />
           <span>FOGSI Guidelines</span>
+        </button>
+
+        <button
+          className={`doctor-nav-tab ${activeTab === 'home' ? 'active' : ''}`}
+          onClick={() => { setActiveTab('home'); loadShared(); }}
+          type="button"
+          id="tab-btn-home"
+        >
+          <House size={16} />
+          <span>Home readings</span>
         </button>
       </div>
 
@@ -1552,6 +1668,90 @@ export default function DoctorDashboard({
                 <h4>Checklist #8: Live Vaccines Pregnancy Deferral</h4>
                 <p>MMR (Rubella) and Varicella are live attenuated vaccines. Advise strictly avoiding pregnancy for at least 4 weeks (28 days) following administration.</p>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* VIEW E: HOME BP/SUGAR READINGS SHARED BY MOTHERS */}
+      {activeTab === 'home' && (
+        <div className="doctor-guidelines-report-tab animate-fade-in">
+          <div className="guidelines-card">
+            <h2>Home readings — checked by patients at home</h2>
+            <p style={{ color: 'var(--text-muted)', marginBottom: '1rem' }}>
+              BP and sugar entries mothers recorded at home, plus their open questions for you.
+              Only mothers who switched on “Share with doctor” appear here.
+              {sharedOffline && ' (Offline demo data from this device.)'}
+            </p>
+            <button
+              type="button"
+              className="btn-secondary-clinical"
+              onClick={loadShared}
+              disabled={sharedLoading}
+              style={{ marginBottom: '1rem' }}
+            >
+              {sharedLoading ? 'Refreshing…' : 'Refresh'}
+            </button>
+
+            {(sharedData.questions || []).length > 0 && (
+              <>
+                <h4 className="management-sub-title">
+                  <MessageCircleQuestion size={15} /> Open questions from mothers
+                </h4>
+                <div className="assessment-notes-grid" style={{ marginBottom: '1.25rem' }}>
+                  {sharedData.questions.map((q) => (
+                    <div key={q.id} className="assessment-note-card">
+                      <div className="note-card-top">
+                        <span className="note-q-text" style={{ fontWeight: 700, color: '#be123c' }}>
+                          🌸 {q.mother_name || 'Mother'}
+                        </span>
+                      </div>
+                      <div className="note-card-content">
+                        <div className="note-body">“{q.question_text}”</div>
+                        <div className="note-caption">
+                          {q.is_suggested ? 'Suggested question • ' : ''}{q.created_at ? new Date(q.created_at).toLocaleDateString('en-GB') : ''}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+
+            <h4 className="management-sub-title">Shared BP / sugar readings</h4>
+            {(sharedData.readings || []).length === 0 && !sharedLoading && (
+              <p style={{ color: 'var(--text-muted)' }}>
+                No shared readings yet. Ask the mother to switch on “Share my home readings with my doctor” in her dashboard.
+              </p>
+            )}
+            <div className="assessment-notes-grid">
+              {(sharedData.readings || []).map((r) => {
+                const v = r.value_json || {};
+                const label = r.type === 'bp'
+                  ? `${v.systolic ?? '–'}/${v.diastolic ?? '–'} mmHg`
+                  : `${v.mg_dl ?? '–'} mg/dL (${v.kind || 'sugar'})`;
+                const fileUrl = r.file_path ? resolveAttachmentUrl({ url: r.file_path }) : null;
+                return (
+                  <div key={r.id} className="assessment-note-card">
+                    <div className="note-card-top">
+                      <span className="note-q-text" style={{ fontWeight: 700, color: '#be123c' }}>
+                        🌸 {r.mother_name || 'Mother'}{r.current_week != null ? ` • week ${r.current_week}` : ''}
+                      </span>
+                    </div>
+                    <div className="note-card-content">
+                      <div className="note-body">{label}</div>
+                      <div className="note-caption">
+                        {r.created_at ? new Date(r.created_at).toLocaleString('en-GB') : ''}{r.note ? ` • ${r.note}` : ''}
+                      </div>
+                      {fileUrl && (
+                        <a href={fileUrl} target="_blank" rel="noopener noreferrer" className="attach-view-link">
+                          📎 Open attached file
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>

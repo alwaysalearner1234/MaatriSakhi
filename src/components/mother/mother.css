@@ -69,6 +69,19 @@
 @media (max-width: 640px) { .growth-grid { grid-template-columns: 1fr 1fr; } }
 .growth-stat { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: .6rem; display: grid; gap: .15rem; }
 .growth-stat span { font-size: .75rem; color: #64748b; }
+/* Ask-your-doctor: top-3 suggestions + share toggle */
+.suggest-grid { display: grid; gap: .6rem; margin: .8rem 0; }
+.suggest-card { display: grid; gap: .25rem; text-align: left; background: #fffbeb; border: 1.5px solid #fde68a;
+  border-radius: 12px; padding: .75rem .9rem; cursor: pointer; transition: .15s; }
+.suggest-card:hover:not(:disabled) { border-color: #f59e0b; transform: translateY(-1px); }
+.suggest-card:disabled { opacity: .6; cursor: wait; }
+.suggest-text { font-size: .9rem; font-weight: 600; color: #78350f; }
+.suggest-reason { display: inline-flex; align-items: center; gap: .3rem; font-size: .76rem; color: #92400e; }
+.share-row { display: flex; align-items: center; gap: .5rem; margin-top: 1rem; padding-top: .8rem;
+  border-top: 1px dashed #cbd5e1; font-size: .88rem; font-weight: 600; color: #334155; }
+.share-toggle { margin-left: auto; border: 1.5px solid #cbd5e1; background: #f8fafc; border-radius: 999px;
+  padding: .35rem 1rem; font-weight: 700; cursor: pointer; font-size: .83rem; }
+.share-toggle.on { border-color: #059669; background: #ecfdf5; color: #065f46; }
 .btn-cont-option { padding: .7rem; border-radius: 10px; border: 1.5px solid #e2e8f0; background: #fff; cursor: pointer; font-weight: 700; }
 .btn-cont-option:hover { border-color: var(--primary-600, #e11d48); }
 /* Demo account box */

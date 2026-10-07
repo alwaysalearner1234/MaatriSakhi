@@ -84,6 +84,22 @@ def test_schema_tests_only():
     pass  # Already tested above
 
 
+def test_question_schema_valid():
+    """Question schema validation should pass for valid data. No DB needed."""
+    from api import question_validator, validate_model
+    data = {
+        "id": str(uuid.uuid4()),
+        "mother_id": str(uuid.uuid4()),
+        "pregnancy_id": str(uuid.uuid4()),
+        "question_text": "My home BP was high, should I come in earlier?",
+        "is_suggested": True,
+        "status": "open",
+        "created_at": "2026-10-02T10:30:00Z",
+    }
+    errors = validate_model(data, question_validator)
+    assert errors == [], f"Expected no errors, got: {errors}"
+
+
 def test_portal_attachments_to_source():
     """portal_to_source should reference attached files without inventing data. No DB needed."""
     from generator import portal_to_source
