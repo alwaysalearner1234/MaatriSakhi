@@ -50,6 +50,7 @@ export default function AttachmentInput({ attachments = [], onChange, max = 3, c
         >
           <Paperclip size={15} />
           <span>{busy ? 'Uploading…' : `Attach image/PDF (${attachments.length}/${max})`}</span>
+
         </button>
         <input
           ref={inputRef}

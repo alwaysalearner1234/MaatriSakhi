@@ -225,17 +225,18 @@ export function serializableAttachments(list) {
   return (list || []).map(serializableAttachment).filter(Boolean);
 }
 
-export function attachmentKind(file) {
+export function attachmentKind(file, { allowText = false } = {}) {
   if ((file.type || '').startsWith('image/')) return 'image';
   if ((file.type || '') === 'application/pdf' || /\.pdf$/i.test(file.name || '')) return 'pdf';
+  if (allowText && (/\.txt$/i.test(file.name || '') || (file.type || '').startsWith('text/'))) return 'file';
   return null;
 }
 
 // Upload one file now; falls back to a session-local preview when the
 // backend is unreachable (offline demo) or no login token exists.
-export async function uploadAttachment(file) {
-  const kind = attachmentKind(file);
-  if (!kind) throw new Error('Only images (PNG/JPG) and PDF files are allowed.');
+export async function uploadAttachment(file, { allowText = false } = {}) {
+  const kind = attachmentKind(file, { allowText });
+  if (!kind) throw new Error('Only images (PNG/JPG), PDF files' + (allowText ? ' and text' : '') + ' are allowed.');
   if (file.size > MAX_ATTACH_BYTES) throw new Error('File too large (max 10 MB).');
   const token = getToken() || localStorage.getItem('doctor_token');
   if (!token) return localAttachment(file);
@@ -344,6 +345,70 @@ export async function updateChild(child_id, payload) {
 export function shouldPromptChildCard(pregnancy) {
   if (!pregnancy) return false;
   return (pregnancy.current_week ?? 0) >= 37;
+}
+
+// ---- Questions for the doctor (free text or top-3 suggestion) ----
+export async function askQuestion({ pregnancy_id, question_text, is_suggested = false }) {
+  try {
+    return await request('/questions', { method: 'POST', body: { pregnancy_id, question_text, is_suggested } });
+  } catch (e) {
+    if (e.message !== 'no-backend') throw e;
+    const local = loadLocal();
+    const row = {
+      id: `q-${Date.now()}`, pregnancy_id, question_text,
+      is_suggested, status: 'open', created_at: new Date().toISOString(),
+    };
+    saveLocal({ questions: [row, ...(local.questions || [])] });
+    return { ...row, offline: true };
+  }
+}
+
+export async function listQuestions(pregnancy_id) {
+  try {
+    return await request(`/questions?pregnancy_id=${pregnancy_id}`);
+  } catch (e) {
+    if (e.message !== 'no-backend') throw e;
+    return (loadLocal().questions || []).filter((q) => q.pregnancy_id === pregnancy_id);
+  }
+}
+
+// ---- Share home readings with the doctor (doctor_access_granted) ----
+export async function setSharing(pregnancy_id, granted) {
+  try {
+    return await request(`/pregnancies/${pregnancy_id}/sharing`, {
+      method: 'PUT', body: { doctor_access_granted: granted },
+    });
+  } catch (e) {
+    if (e.message !== 'no-backend') throw e;
+    const local = loadLocal();
+    const pregnancies = (local.pregnancies || []).map((p) =>
+      p.id === pregnancy_id ? { ...p, doctor_access_granted: granted } : p
+    );
+    saveLocal({
+      pregnancies,
+      activePregnancy: local.activePregnancy?.id === pregnancy_id
+        ? { ...local.activePregnancy, doctor_access_granted: granted }
+        : local.activePregnancy,
+    });
+    return { offline: true, doctor_access_granted: granted };
+  }
+}
+
+// Offline demo bridge: the doctor dashboard (same browser) reads the local
+// mother store so shared home readings appear without a backend.
+export function getLocalSharedReadings() {
+  const local = loadLocal();
+  if (!local.mother) return { readings: [], questions: [] };
+  const sharedPregIds = new Set(
+    (local.pregnancies || []).filter((p) => p.doctor_access_granted).map((p) => p.id)
+  );
+  const readings = (local.entries || [])
+    .filter((e) => sharedPregIds.has(e.pregnancy_id) && (e.type === 'bp' || e.type === 'sugar'))
+    .map((e) => ({ ...e, mother_name: local.mother.name }));
+  const questions = (local.questions || [])
+    .filter((q) => sharedPregIds.has(q.pregnancy_id) && q.status !== 'answered')
+    .map((q) => ({ ...q, mother_name: local.mother.name }));
+  return { readings, questions };
 }
 
 // ---- Tracker activation logic (shared by setup flow + dashboard) ----

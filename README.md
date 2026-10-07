@@ -69,6 +69,11 @@ This application is strictly grounded in the official medical guidelines of the 
    - Email: `mother@maatri.sakhi` · Password: `mother123` (same convention as the doctor demo: `doctor@maatri.sakhi` / `doctor123`).
    - Pre-seeded with consent given + a week-38 pregnancy (high BP + gestational diabetes + doctor limits, visit in 7 days) so both trackers and the Child Health Card creation flow are immediately explorable. Works online (Postgres) and offline (local demo store).
    - The doctor login screen has a matching one-click demo (`doctor@maatri.sakhi` / `doctor123`).
+8. **Ask-Your-Doctor + Home Readings Sharing**:
+   - Mother dashboard shows **top 3 smart question suggestions** built from her week, limits, visit date and home readings (tap to ask), plus a free-text question box (`questions` table).
+   - A **“Share with doctor” toggle** (`doctor_access_granted`) lets home-checked BP/sugar readings and open questions appear in the doctor dashboard's **Home readings** tab.
+9. **Shareable Patient Reports**:
+   - Doctor dashboard **“Share with patient”** button: native share sheet (WhatsApp/email) when available, else an openable hosted link (+ copy + WhatsApp send), else download. Reports reference attached images/PDFs.
 
 ---
 

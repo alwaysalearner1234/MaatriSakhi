@@ -167,12 +167,30 @@ CHILD_SCHEMA = {
     },
 }
 
+# Question schema — mother's question for her doctor
+QUESTION_SCHEMA = {
+    "type": "object",
+    "additionalProperties": False,
+    "required": ["id", "mother_id", "pregnancy_id", "question_text"],
+    "properties": {
+        "id": {"type": "string", "format": "uuid"},
+        "mother_id": {"type": "string", "format": "uuid"},
+        "pregnancy_id": {"type": "string", "format": "uuid"},
+        "question_text": {"type": "string", "minLength": 1},
+        "is_suggested": {"type": "boolean"},
+        "status": {"type": "string", "enum": ["open", "answered"]},
+        "answer_text": {"type": ["string", "null"]},
+        "created_at": {"type": "string", "format": "date-time"},
+    },
+}
+
 # Create validators
 mother_validator = Draft202012Validator(MOTHER_SCHEMA)
 pregnancy_validator = Draft202012Validator(PREGNANCY_SCHEMA)
 entry_validator = Draft202012Validator(ENTRY_SCHEMA)
 visit_validator = Draft202012Validator(VISIT_SCHEMA)
 child_validator = Draft202012Validator(CHILD_SCHEMA)
+question_validator = Draft202012Validator(QUESTION_SCHEMA)
 
 # Row Level Security - enable on all tables so Supabase public Data API cannot read data
 # Our backend connects as the postgres user, so it still has full access
@@ -181,6 +199,7 @@ RLS_STATEMENTS = [
     "ALTER TABLE pregnancies ENABLE ROW LEVEL SECURITY",
     "ALTER TABLE entries ENABLE ROW LEVEL SECURITY",
     "ALTER TABLE visits ENABLE ROW LEVEL SECURITY",
+    "ALTER TABLE questions ENABLE ROW LEVEL SECURITY",
     "ALTER TABLE children ENABLE ROW LEVEL SECURITY",
     "ALTER TABLE doctors ENABLE ROW LEVEL SECURITY",
     "ALTER TABLE patients ENABLE ROW LEVEL SECURITY",
@@ -341,6 +360,26 @@ async def initialize_database():
                 )
                 await connection.execute(
                     "CREATE INDEX IF NOT EXISTS idx_children_pregnancy ON children(pregnancy_id);"
+                )
+
+                # 8. Create questions table (mother -> doctor questions)
+                await connection.execute("""
+                    CREATE TABLE IF NOT EXISTS questions (
+                        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+                        mother_id UUID NOT NULL REFERENCES mothers(id) ON DELETE CASCADE,
+                        pregnancy_id UUID NOT NULL REFERENCES pregnancies(id) ON DELETE CASCADE,
+                        question_text TEXT NOT NULL,
+                        is_suggested BOOLEAN NOT NULL DEFAULT FALSE,
+                        status VARCHAR(20) NOT NULL DEFAULT 'open' CHECK (status IN ('open', 'answered')),
+                        answer_text TEXT,
+                        created_at TIMESTAMPTZ DEFAULT NOW()
+                    );
+                """)
+                await connection.execute(
+                    "CREATE INDEX IF NOT EXISTS idx_questions_mother ON questions(mother_id);"
+                )
+                await connection.execute(
+                    "CREATE INDEX IF NOT EXISTS idx_questions_pregnancy ON questions(pregnancy_id);"
                 )
 
                 # Enable Row Level Security on all tables

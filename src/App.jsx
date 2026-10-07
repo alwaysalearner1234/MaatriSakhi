@@ -686,6 +686,7 @@ export default function App() {
           <PregnancyDashboard
             mother={mother}
             pregnancy={pregnancy}
+            onUpdatePregnancy={(p) => setPregnancy(p)}
             child={child}
             onUpdateMother={(m) => { setMother(m); if (!m.consent_given) setCurrentView('mother_consent'); }}
             onBack={() => setCurrentView('mode_switch')}
