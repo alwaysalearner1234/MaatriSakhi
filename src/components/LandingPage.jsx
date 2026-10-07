@@ -322,32 +322,32 @@ export default function LandingPage({
               <div className="collage-circle-backdrop backdrop-1" />
               <div className="collage-circle-backdrop backdrop-2" />
 
-              {/* Overlapping Image 1: Pregnant Indian Mother (Large card) */}
+              {/* Overlapping Image 1: Mother & Father visiting the doctor (Large card) */}
               <div className="collage-card card-pregnant">
                 <img
-                  src="/images/pregnant_mother.jpg"
-                  alt="Expectant Indian Mother planning preconception care"
+                  src="/images/couple_doctor_visit.jpg"
+                  alt="Mother and father visiting the doctor for preconception consultation"
                   className="collage-img"
                   loading="eager"
                 />
                 <div className="collage-img-overlay" />
               </div>
 
-              {/* Overlapping Image 2: Indian Mother with Baby (Circular) */}
+              {/* Overlapping Image 2: Preconception Mother (Circular) */}
               <div className="collage-card card-mother-baby">
                 <img
-                  src="/images/mother_baby.jpg"
-                  alt="Happy Indian Mother with baby smiling"
+                  src="/images/preconception_mother.jpg"
+                  alt="Smiling preconception mother preparing for a healthy pregnancy"
                   className="collage-img"
                   loading="eager"
                 />
               </div>
 
-              {/* Overlapping Image 3: Indian Couple (Rounded card) */}
+              {/* Overlapping Image 3: Doctor consulting the mother (Rounded card) */}
               <div className="collage-card card-couple">
                 <img
-                  src="/images/couple.jpg"
-                  alt="Indian couple planning a healthy pregnancy"
+                  src="/images/pregnant_consultation.jpg"
+                  alt="Doctor consulting the mother beside the ultrasound machine"
                   className="collage-img"
                   loading="eager"
                 />
@@ -485,8 +485,8 @@ export default function LandingPage({
           <div className="why-image-side">
             <div className="why-image-frame">
               <img
-                src="/images/mother_baby.jpg"
-                alt="Mother and healthy child"
+                src="/images/couple_doctor_visit.jpg"
+                alt="Parents consulting the doctor together before pregnancy"
                 className="why-img"
                 loading="lazy"
               />
@@ -732,8 +732,8 @@ export default function LandingPage({
           <div className="emotional-collage-strip">
             <div className="emotional-image-item">
               <img
-                src="/images/couple.jpg"
-                alt="Indian couple planning parenthood"
+                src="/images/couple_doctor_visit.jpg"
+                alt="Mother and father visiting the doctor together"
                 loading="lazy"
               />
               <span className="emotional-tag">Shared Family Journey</span>
@@ -741,8 +741,8 @@ export default function LandingPage({
 
             <div className="emotional-image-item center-highlight">
               <img
-                src="/images/pregnant_mother.jpg"
-                alt="Pregnant Indian mother"
+                src="/images/preconception_mother.jpg"
+                alt="Preconception mother under care and protection"
                 loading="lazy"
               />
               <span className="emotional-tag">Care & Protection</span>
@@ -750,8 +750,8 @@ export default function LandingPage({
 
             <div className="emotional-image-item">
               <img
-                src="/images/mother_baby.jpg"
-                alt="Indian mother and newborn"
+                src="/images/pregnant_consultation.jpg"
+                alt="Doctor guiding the mother toward joyful health"
                 loading="lazy"
               />
               <span className="emotional-tag">Joyful Health</span>
